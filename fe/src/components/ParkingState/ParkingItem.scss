@@ -1,0 +1,23 @@
+.root{
+	height:1rem;
+	width: 1rem;
+	border:.01rem solid #fee;
+	border-radius:.1rem;
+	background-color: #f00;
+	color:#fff;
+	font: .22rem simsum,serif;
+	line-height: 1rem;
+	text-align: center;
+
+	margin:0 auto;
+}
+
+.idle{
+	background-color: #00ff00;
+}
+.busy{
+	background-color:#f00;
+}
+.ordered{
+	background-color: #00a8ec;
+}

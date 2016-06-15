@@ -1,0 +1,12 @@
+.root{
+	height: .6rem;
+	width: 100%;
+	box-sizing: border-box;
+	background-color: #474e7a;
+	color:#fff;
+	overflow: hidden;
+	position: relative;
+	transition:all .8s;
+	
+	padding-left:calc(100vw - 100%) ;
+}

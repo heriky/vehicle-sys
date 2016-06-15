@@ -1,0 +1,22 @@
+$minHeight : 3rem;
+:export{
+	minHeight:$minHeight
+}
+.root{
+	height:$minHeight;
+}
+.wrapper{
+	width: 33.3333% ;
+	padding:.2rem 0 ;
+	// outline: 1px solid red;
+	float:left;
+}
+.indicator{
+	position: absolute;
+	right:0;top:.08rem;
+	li{
+		display: inline-block;
+		margin-right: 10px;
+	}
+}
+
