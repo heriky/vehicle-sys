@@ -15,9 +15,9 @@ const StatePreview = ({info,detail,isFetching})=>{
 				<StateIndicator clazz = {styles['state-info']}  {...detail}/>
 				<dl className = {styles['state-run']}>
 					<dt className = {styles['state-title']}>传感器运行状态：</dt>
-					<dd className = {styles['state-content']}>{status? '正常':'停止'}</dd>
+					<dd className = {styles['state-content']}>{status == 1 ? '正常':'停止'}</dd>
 					<dt className = {styles['state-title']}>更新于:</dt>
-					<dd className = {styles['state-content']}>{new Date().toLocaleString()}</dd>
+					<dd className = {styles['state-content']}>{"时间容易造成前后端渲染不一致"}</dd>
 					<br />
 					<dt className = {styles['state-title']}>经纬度:</dt>
 					<dd className = {styles['state-content']}>{`${location[0]} / ${location[1]}`}</dd>

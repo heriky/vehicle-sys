@@ -30,21 +30,20 @@ app.use((req,res)=>{
 		}else if(redirect){
 			return res.status(302).redirect(redirect.pathname + redirect.search) ;
 		}else if(!renderProps){
-			console.log('当前的请求路径是:',req.url) ;
 			return res.status(404).send('Not Found')
 		}
 		// 处理完异常情况，接下来正式渲染页面
-		// 将app应用渲染成html字符串，插入到HTML模板中去
-		const appHtml = renderToString(
-			<Provider store = {store}>
-				<RouterContext {...renderProps}/>
-			</Provider>
-		);
-		console.log('renderProps到底是什么:') ;
-		console.log(renderProps) ;
-		//服务器端，同步处理组件初始的依赖数据
+		// 服务器端同步渲染
+		//服务器端，同步处理组件初始的依赖数据,依赖数据返回之前尽量不要renderToString，否则前后端渲染不一致
 		fetchDependentData(store.dispatch,renderProps.components,renderProps.params)
-			.then(()=>{
+			.then(()=>{ // then 调用时，store状态已经发生了变化
+				// 将app应用渲染成html字符串
+				// renderToString()的时机最好放在依赖数据全部返回，store状态变化后，以此避免前后端不一致问题
+				const appHtml = renderToString(
+					<Provider store = {store}>
+						<RouterContext {...renderProps}/>
+					</Provider>
+				);
 				return renderPage(appHtml,store.getState()) // 内部promise执行完成后相当于dispatch了新动作，导致state更新了。！！
 			})
 			.then(html=>{
