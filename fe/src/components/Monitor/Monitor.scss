@@ -3,3 +3,19 @@
 	margin: 0 auto;
 	overflow:hidden;
 }
+
+@media (max-width: 992px) {
+	.main{
+		width:100%;
+		padding:0 1%;
+		box-sizing: border-box;
+	}
+}
+
+@media only screen and (max-width: 768px){
+	.main{
+		box-sizing: border-box;
+		width:100%;
+		padding:2%;
+	}
+}

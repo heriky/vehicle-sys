@@ -1,6 +1,6 @@
 import React from 'react' ;
-import Navbar from '../Navbar' ;
-import BreadCumb from '../BreadCumb' ;
+import Navbar from '../Navbar/Navbar' ;
+import BreadCumb from '../BreadCumb/BreadCumb' ;
 
 import styles from  './App.scss';
 

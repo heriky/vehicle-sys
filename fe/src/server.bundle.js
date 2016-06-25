@@ -55,48 +55,81 @@ require("source-map-support").install();
 	
 	var _path2 = _interopRequireDefault(_path);
 	
-	var _react = __webpack_require__(3);
+	var _httpProxy = __webpack_require__(3);
+	
+	var _httpProxy2 = _interopRequireDefault(_httpProxy);
+	
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactRouter = __webpack_require__(4);
+	var _reactRouter = __webpack_require__(5);
 	
-	var _server = __webpack_require__(5);
+	var _server = __webpack_require__(6);
 	
-	var _reactRedux = __webpack_require__(6);
+	var _reactRedux = __webpack_require__(7);
 	
-	var _routes = __webpack_require__(7);
+	var _LocationUtils = __webpack_require__(8);
+	
+	var _routes = __webpack_require__(13);
 	
 	var _routes2 = _interopRequireDefault(_routes);
 	
-	var _store = __webpack_require__(60);
+	var _store = __webpack_require__(65);
 	
 	var _store2 = _interopRequireDefault(_store);
 	
-	var _renderPage = __webpack_require__(69);
+	var _renderPage = __webpack_require__(75);
 	
 	var _renderPage2 = _interopRequireDefault(_renderPage);
 	
-	var _fetchDependentData = __webpack_require__(70);
+	var _fetchDependentData = __webpack_require__(76);
 	
 	var _fetchDependentData2 = _interopRequireDefault(_fetchDependentData);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
+	// 用这个消除index.js.map 的恶心bug
+	
+	
 	var app = (0, _express2.default)();
 	var resourceDir = _path2.default.join(__dirname, '../../resources');
 	app.use(_express2.default.static(resourceDir, { maxAge: '365d' }));
 	
+	var proxy = _httpProxy2.default.createProxyServer({
+		target: 'http://localhost:3000/api'
+	});
+	
+	app.use('/api', function (req, res) {
+		proxy.web(req, res);
+	});
+	proxy.on('error', function (error, req, res) {
+		//proxy错误处理s
+		var json = void 0;
+		if (error.code !== 'ECONNRESET') {
+			console.error('proxy error', error);
+		}
+		if (!res.headersSent) {
+			res.writeHead(500, { 'content-type': 'application/json' });
+		}
+	
+		json = { error: 'proxy_error', reason: error.message };
+		res.end(JSON.stringify(json));
+	});
+	
+	/**************************服务器端路由渲染**************************************/
 	var memoryHistory = (0, _reactRouter.createMemoryHistory)();
 	var store = (0, _store2.default)();
 	
 	// 作为中间件使用
 	app.use(function (req, res) {
-		console.log('当前请求的url：');
-		console.log(req.url);
-		console.log('-------------');
-		(0, _reactRouter.match)({ routes: _routes2.default, location: req.url }, function (err, redirect, renderProps) {
+	
+		var location = (0, _LocationUtils.createLocation)(req.url);
+	
+		(0, _reactRouter.match)({ routes: _routes2.default, location: location }, function (err, redirect, renderProps) {
 			// 传入一个对象和回调！！
+			console.log('当前请求的url：' + req.url);
+	
 			if (err) {
 				console.info(err);
 				return res.status(500).send(err.message);
@@ -149,62 +182,31 @@ require("source-map-support").install();
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("react");
+	module.exports = require("http-proxy");
 
 /***/ },
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("react-router");
+	module.exports = require("react");
 
 /***/ },
 /* 5 */
 /***/ function(module, exports) {
 
-	module.exports = require("react-dom/server");
+	module.exports = require("react-router");
 
 /***/ },
 /* 6 */
 /***/ function(module, exports) {
 
-	module.exports = require("react-redux");
+	module.exports = require("react-dom/server");
 
 /***/ },
 /* 7 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _react = __webpack_require__(3);
-	
-	var _react2 = _interopRequireDefault(_react);
-	
-	var _reactRouter = __webpack_require__(4);
-	
-	var _App = __webpack_require__(8);
-	
-	var _App2 = _interopRequireDefault(_App);
-	
-	var _Home = __webpack_require__(27);
-	
-	var _Home2 = _interopRequireDefault(_Home);
-	
-	var _Monitor = __webpack_require__(32);
-	
-	var _Monitor2 = _interopRequireDefault(_Monitor);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	exports.default = _react2.default.createElement(
-		_reactRouter.Route,
-		{ path: '/', component: _App2.default },
-		_react2.default.createElement(_reactRouter.IndexRoute, { component: _Home2.default }),
-		_react2.default.createElement(_reactRouter.Route, { path: 'monitor', component: _Monitor2.default })
-	);
+	module.exports = require("react-redux");
 
 /***/ },
 /* 8 */
@@ -215,18 +217,279 @@ require("source-map-support").install();
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.locationsAreEqual = exports.statesAreEqual = exports.createLocation = exports.createQuery = undefined;
 	
-	var _App = __webpack_require__(9);
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 	
-	var _App2 = _interopRequireDefault(_App);
-
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+	
+	var _invariant = __webpack_require__(9);
+	
+	var _invariant2 = _interopRequireDefault(_invariant);
+	
+	var _PathUtils = __webpack_require__(10);
+	
+	var _Actions = __webpack_require__(12);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _App2.default;
-	//export {App as default} from './App'
+	
+	var createQuery = exports.createQuery = function createQuery(props) {
+	  return _extends(Object.create(null), props);
+	};
+	
+	var createLocation = exports.createLocation = function createLocation() {
+	  var input = arguments.length <= 0 || arguments[0] === undefined ? '/' : arguments[0];
+	  var action = arguments.length <= 1 || arguments[1] === undefined ? _Actions.POP : arguments[1];
+	  var key = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+	
+	  var object = typeof input === 'string' ? (0, _PathUtils.parsePath)(input) : input;
+	
+	  var pathname = object.pathname || '/';
+	  var search = object.search || '';
+	  var hash = object.hash || '';
+	  var state = object.state;
+	
+	  return {
+	    pathname: pathname,
+	    search: search,
+	    hash: hash,
+	    state: state,
+	    action: action,
+	    key: key
+	  };
+	};
+	
+	var isDate = function isDate(object) {
+	  return Object.prototype.toString.call(object) === '[object Date]';
+	};
+	
+	var statesAreEqual = exports.statesAreEqual = function statesAreEqual(a, b) {
+	  if (a === b) return true;
+	
+	  var typeofA = typeof a === 'undefined' ? 'undefined' : _typeof(a);
+	  var typeofB = typeof b === 'undefined' ? 'undefined' : _typeof(b);
+	
+	  if (typeofA !== typeofB) return false;
+	
+	  !(typeofA !== 'function') ? process.env.NODE_ENV !== 'production' ? (0, _invariant2.default)(false, 'You must not store functions in location state') : (0, _invariant2.default)(false) : void 0;
+	
+	  // Not the same object, but same type.
+	  if (typeofA === 'object') {
+	    !!(isDate(a) && isDate(b)) ? process.env.NODE_ENV !== 'production' ? (0, _invariant2.default)(false, 'You must not store Date objects in location state') : (0, _invariant2.default)(false) : void 0;
+	
+	    if (!Array.isArray(a)) return Object.keys(a).every(function (key) {
+	      return statesAreEqual(a[key], b[key]);
+	    });
+	
+	    return Array.isArray(b) && a.length === b.length && a.every(function (item, index) {
+	      return statesAreEqual(item, b[index]);
+	    });
+	  }
+	
+	  // All other serializable types (string, number, boolean)
+	  // should be strict equal.
+	  return false;
+	};
+	
+	var locationsAreEqual = exports.locationsAreEqual = function locationsAreEqual(a, b) {
+	  return a.key === b.key &&
+	  // a.action === b.action && // Different action !== location change.
+	  a.pathname === b.pathname && a.search === b.search && a.hash === b.hash && statesAreEqual(a.state, b.state);
+	};
 
 /***/ },
 /* 9 */
+/***/ function(module, exports) {
+
+	module.exports = require("invariant");
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.createPath = exports.parsePath = exports.getQueryStringValueFromPath = exports.stripQueryStringValueFromPath = exports.addQueryStringValueToPath = exports.isAbsolutePath = undefined;
+	
+	var _warning = __webpack_require__(11);
+	
+	var _warning2 = _interopRequireDefault(_warning);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var isAbsolutePath = exports.isAbsolutePath = function isAbsolutePath(path) {
+	  return typeof path === 'string' && path.charAt(0) === '/';
+	};
+	
+	var addQueryStringValueToPath = exports.addQueryStringValueToPath = function addQueryStringValueToPath(path, key, value) {
+	  var _parsePath = parsePath(path);
+	
+	  var pathname = _parsePath.pathname;
+	  var search = _parsePath.search;
+	  var hash = _parsePath.hash;
+	
+	
+	  return createPath({
+	    pathname: pathname,
+	    search: search + (search.indexOf('?') === -1 ? '?' : '&') + key + '=' + value,
+	    hash: hash
+	  });
+	};
+	
+	var stripQueryStringValueFromPath = exports.stripQueryStringValueFromPath = function stripQueryStringValueFromPath(path, key) {
+	  var _parsePath2 = parsePath(path);
+	
+	  var pathname = _parsePath2.pathname;
+	  var search = _parsePath2.search;
+	  var hash = _parsePath2.hash;
+	
+	
+	  return createPath({
+	    pathname: pathname,
+	    search: search.replace(new RegExp('([?&])' + key + '=[a-zA-Z0-9]+(&?)'), function (match, prefix, suffix) {
+	      return prefix === '?' ? prefix : suffix;
+	    }),
+	    hash: hash
+	  });
+	};
+	
+	var getQueryStringValueFromPath = exports.getQueryStringValueFromPath = function getQueryStringValueFromPath(path, key) {
+	  var _parsePath3 = parsePath(path);
+	
+	  var search = _parsePath3.search;
+	
+	  var match = search.match(new RegExp('[?&]' + key + '=([a-zA-Z0-9]+)'));
+	  return match && match[1];
+	};
+	
+	var extractPath = function extractPath(string) {
+	  var match = string.match(/^(https?:)?\/\/[^\/]*/);
+	  return match == null ? string : string.substring(match[0].length);
+	};
+	
+	var parsePath = exports.parsePath = function parsePath(path) {
+	  var pathname = extractPath(path);
+	  var search = '';
+	  var hash = '';
+	
+	  process.env.NODE_ENV !== 'production' ? (0, _warning2.default)(path === pathname, 'A path must be pathname + search + hash only, not a full URL like "%s"', path) : void 0;
+	
+	  var hashIndex = pathname.indexOf('#');
+	  if (hashIndex !== -1) {
+	    hash = pathname.substring(hashIndex);
+	    pathname = pathname.substring(0, hashIndex);
+	  }
+	
+	  var searchIndex = pathname.indexOf('?');
+	  if (searchIndex !== -1) {
+	    search = pathname.substring(searchIndex);
+	    pathname = pathname.substring(0, searchIndex);
+	  }
+	
+	  if (pathname === '') pathname = '/';
+	
+	  return {
+	    pathname: pathname,
+	    search: search,
+	    hash: hash
+	  };
+	};
+	
+	var createPath = exports.createPath = function createPath(location) {
+	  if (location == null || typeof location === 'string') return location;
+	
+	  var basename = location.basename;
+	  var pathname = location.pathname;
+	  var search = location.search;
+	  var hash = location.hash;
+	
+	  var path = (basename || '') + pathname;
+	
+	  if (search && search !== '?') path += search;
+	
+	  if (hash) path += hash;
+	
+	  return path;
+	};
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	module.exports = require("warning");
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	/**
+	 * Indicates that navigation was caused by a call to history.push.
+	 */
+	var PUSH = exports.PUSH = 'PUSH';
+	
+	/**
+	 * Indicates that navigation was caused by a call to history.replace.
+	 */
+	var REPLACE = exports.REPLACE = 'REPLACE';
+	
+	/**
+	 * Indicates that navigation was caused by some other action such
+	 * as using a browser's back/forward buttons and/or manually manipulating
+	 * the URL in a browser's location bar. This is the default.
+	 *
+	 * See https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onpopstate
+	 * for more information.
+	 */
+	var POP = exports.POP = 'POP';
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _react = __webpack_require__(4);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var _reactRouter = __webpack_require__(5);
+	
+	var _App = __webpack_require__(14);
+	
+	var _App2 = _interopRequireDefault(_App);
+	
+	var _Home = __webpack_require__(30);
+	
+	var _Home2 = _interopRequireDefault(_Home);
+	
+	var _Monitor = __webpack_require__(33);
+	
+	var _Monitor2 = _interopRequireDefault(_Monitor);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	exports.default = _react2.default.createElement(
+		_reactRouter.Route,
+		{ path: '/', component: _App2.default },
+		_react2.default.createElement(_reactRouter.IndexRoute, { component: _Home2.default }),
+		_react2.default.createElement(_reactRouter.Route, { path: 'monitor/:id', component: _Monitor2.default }),
+		_react2.default.createElement(_reactRouter.Route, { path: 'monitor', component: _Monitor2.default })
+	);
+
+/***/ },
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -235,19 +498,19 @@ require("source-map-support").install();
 			value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _Navbar = __webpack_require__(10);
+	var _Navbar = __webpack_require__(15);
 	
 	var _Navbar2 = _interopRequireDefault(_Navbar);
 	
-	var _BreadCumb = __webpack_require__(22);
+	var _BreadCumb = __webpack_require__(26);
 	
 	var _BreadCumb2 = _interopRequireDefault(_BreadCumb);
 	
-	var _App = __webpack_require__(26);
+	var _App = __webpack_require__(29);
 	
 	var _App2 = _interopRequireDefault(_App);
 	
@@ -279,25 +542,7 @@ require("source-map-support").install();
 	exports.default = App;
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _Navbar = __webpack_require__(11);
-	
-	var _Navbar2 = _interopRequireDefault(_Navbar);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _Navbar2.default; //export {Navbar as default } from './Navbar.js';
-
-/***/ },
-/* 11 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -306,27 +551,27 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _NavbarBrand = __webpack_require__(12);
+	var _NavbarBrand = __webpack_require__(16);
 	
 	var _NavbarBrand2 = _interopRequireDefault(_NavbarBrand);
 	
-	var _NavbarMenu = __webpack_require__(14);
+	var _NavbarMenu = __webpack_require__(18);
 	
 	var _NavbarMenu2 = _interopRequireDefault(_NavbarMenu);
 	
-	var _NavbarExtra = __webpack_require__(18);
+	var _NavbarExtra = __webpack_require__(22);
 	
 	var _NavbarExtra2 = _interopRequireDefault(_NavbarExtra);
 	
-	var _Navbar = __webpack_require__(20);
+	var _Navbar = __webpack_require__(24);
 	
 	var _Navbar2 = _interopRequireDefault(_Navbar);
 	
-	var _classname = __webpack_require__(21);
+	var _classname = __webpack_require__(25);
 	
 	var _classname2 = _interopRequireDefault(_classname);
 	
@@ -345,7 +590,7 @@ require("source-map-support").install();
 	exports.default = Navbar;
 
 /***/ },
-/* 12 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -354,11 +599,11 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _NavbarBrand = __webpack_require__(13);
+	var _NavbarBrand = __webpack_require__(17);
 	
 	var _NavbarBrand2 = _interopRequireDefault(_NavbarBrand);
 	
@@ -375,166 +620,12 @@ require("source-map-support").install();
 	exports.default = NavbarBrand;
 
 /***/ },
-/* 13 */
+/* 17 */
 /***/ function(module, exports) {
 
 	module.exports = {
 		"root": "NavbarBrand__root-1nO-V"
 	};
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _react = __webpack_require__(3);
-	
-	var _react2 = _interopRequireDefault(_react);
-	
-	var _NavLink = __webpack_require__(15);
-	
-	var _NavLink2 = _interopRequireDefault(_NavLink);
-	
-	var _NavbarMenu = __webpack_require__(16);
-	
-	var _NavbarMenu2 = _interopRequireDefault(_NavbarMenu);
-	
-	var _classnames = __webpack_require__(17);
-	
-	var _classnames2 = _interopRequireDefault(_classnames);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-	
-	var NavbarMenu = function NavbarMenu(props) {
-		var _classNames;
-	
-		var activeStyle = (0, _classnames2.default)((_classNames = {}, _defineProperty(_classNames, _NavbarMenu2.default['menu-item'], true), _defineProperty(_classNames, _NavbarMenu2.default.indicator, true), _classNames));
-		return _react2.default.createElement(
-			'ul',
-			{ className: _NavbarMenu2.default.root },
-			_react2.default.createElement(
-				'li',
-				{ className: _NavbarMenu2.default['menu-item'], key: '1', 'data-role': 'navlink' },
-				_react2.default.createElement(
-					_NavLink2.default,
-					{ to: '/', isIndex: true },
-					_react2.default.createElement(
-						'i',
-						{ className: 'iconfont' },
-						''
-					),
-					' 首页'
-				)
-			),
-			_react2.default.createElement(
-				'li',
-				{ className: _NavbarMenu2.default['menu-item'], key: '2', 'data-role': 'navlink' },
-				_react2.default.createElement(
-					_NavLink2.default,
-					{ to: '/monitor' },
-					_react2.default.createElement(
-						'i',
-						{ className: 'iconfont' },
-						''
-					),
-					' 监控'
-				)
-			),
-			_react2.default.createElement(
-				'li',
-				{ className: _NavbarMenu2.default['menu-item'], key: '3', 'data-role': 'navlink' },
-				_react2.default.createElement(
-					_NavLink2.default,
-					{ to: '/recommend' },
-					_react2.default.createElement(
-						'i',
-						{ className: 'iconfont' },
-						''
-					),
-					' 推荐'
-				)
-			),
-			_react2.default.createElement(
-				'li',
-				{ className: _NavbarMenu2.default['menu-item'], key: '4', 'data-role': 'navlink' },
-				_react2.default.createElement(
-					_NavLink2.default,
-					{ to: '/api' },
-					_react2.default.createElement(
-						'i',
-						{ className: 'iconfont' },
-						''
-					),
-					' API'
-				)
-			),
-			_react2.default.createElement(
-				'li',
-				{ className: _NavbarMenu2.default['menu-item'], key: '5', 'data-role': 'navlink' },
-				_react2.default.createElement(
-					_NavLink2.default,
-					{ to: '/feedback' },
-					_react2.default.createElement(
-						'i',
-						{ className: 'iconfont' },
-						''
-					),
-					' 反馈'
-				)
-			)
-		);
-	};
-	
-	exports.default = NavbarMenu;
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-	
-	var _react = __webpack_require__(3);
-	
-	var _react2 = _interopRequireDefault(_react);
-	
-	var _reactRouter = __webpack_require__(4);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	var NavLink = function NavLink(props) {
-		var isIndex = props.isIndex || false;
-		return isIndex ? _react2.default.createElement(_reactRouter.IndexLink, _extends({ activeClassName: 'nav-active' }, props)) : _react2.default.createElement(_reactRouter.Link, _extends({ activeClassName: 'nav-active' }, props));
-	};
-	
-	exports.default = NavLink;
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	module.exports = {
-		"root": "NavbarMenu__root-2Rbnr",
-		"menu-item": "NavbarMenu__menu-item-1GUjF"
-	};
-
-/***/ },
-/* 17 */
-/***/ function(module, exports) {
-
-	module.exports = require("classnames");
 
 /***/ },
 /* 18 */
@@ -546,11 +637,171 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _NavbarExtra = __webpack_require__(19);
+	var _NavLink = __webpack_require__(19);
+	
+	var _NavLink2 = _interopRequireDefault(_NavLink);
+	
+	var _NavbarMenu = __webpack_require__(20);
+	
+	var _NavbarMenu2 = _interopRequireDefault(_NavbarMenu);
+	
+	var _classnames = __webpack_require__(21);
+	
+	var _classnames2 = _interopRequireDefault(_classnames);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var NavbarMenu = function NavbarMenu(props) {
+		return _react2.default.createElement(
+			'div',
+			null,
+			_react2.default.createElement(
+				'button',
+				{ className: _NavbarMenu2.default.toggle },
+				'|||'
+			),
+			_react2.default.createElement(
+				'ul',
+				{ className: _NavbarMenu2.default.root },
+				_react2.default.createElement(
+					'li',
+					{ className: _NavbarMenu2.default['menu-item'], key: '1', 'data-role': 'navlink' },
+					_react2.default.createElement(
+						_NavLink2.default,
+						{ to: '/', isIndex: true },
+						_react2.default.createElement(
+							'i',
+							{ className: 'iconfont' },
+							''
+						),
+						' 首页'
+					)
+				),
+				_react2.default.createElement(
+					'li',
+					{ className: _NavbarMenu2.default['menu-item'], key: '2', 'data-role': 'navlink' },
+					_react2.default.createElement(
+						_NavLink2.default,
+						{ to: '/monitor' },
+						_react2.default.createElement(
+							'i',
+							{ className: 'iconfont' },
+							''
+						),
+						' 监控'
+					)
+				),
+				_react2.default.createElement(
+					'li',
+					{ className: _NavbarMenu2.default['menu-item'], key: '3', 'data-role': 'navlink' },
+					_react2.default.createElement(
+						_NavLink2.default,
+						{ to: '/recommend' },
+						_react2.default.createElement(
+							'i',
+							{ className: 'iconfont' },
+							''
+						),
+						' 推荐'
+					)
+				),
+				_react2.default.createElement(
+					'li',
+					{ className: _NavbarMenu2.default['menu-item'], key: '4', 'data-role': 'navlink' },
+					_react2.default.createElement(
+						_NavLink2.default,
+						{ to: '/api' },
+						_react2.default.createElement(
+							'i',
+							{ className: 'iconfont' },
+							''
+						),
+						' API'
+					)
+				),
+				_react2.default.createElement(
+					'li',
+					{ className: _NavbarMenu2.default['menu-item'], key: '5', 'data-role': 'navlink' },
+					_react2.default.createElement(
+						_NavLink2.default,
+						{ to: '/feedback' },
+						_react2.default.createElement(
+							'i',
+							{ className: 'iconfont' },
+							''
+						),
+						' 反馈'
+					)
+				)
+			)
+		);
+	};
+	
+	exports.default = NavbarMenu;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+	
+	var _react = __webpack_require__(4);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var _reactRouter = __webpack_require__(5);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var NavLink = function NavLink(props) {
+		var isIndex = props.isIndex || false;
+		// NavLink处理两类事件：1.activeClassName /activeStyle  2.IndexLink
+		return isIndex ? _react2.default.createElement(_reactRouter.IndexLink, _extends({ activeClassName: 'nav-active' }, props)) : _react2.default.createElement(_reactRouter.Link, _extends({ activeClassName: 'nav-active' }, props));
+	};
+	
+	exports.default = NavLink;
+
+/***/ },
+/* 20 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"toggle": "NavbarMenu__toggle-WrV5t",
+		"root": "NavbarMenu__root-2Rbnr",
+		"menu-item": "NavbarMenu__menu-item-1GUjF"
+	};
+
+/***/ },
+/* 21 */
+/***/ function(module, exports) {
+
+	module.exports = require("classnames");
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _react = __webpack_require__(4);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var _NavbarExtra = __webpack_require__(23);
 	
 	var _NavbarExtra2 = _interopRequireDefault(_NavbarExtra);
 	
@@ -567,7 +818,7 @@ require("source-map-support").install();
 	exports.default = NavbarExtra;
 
 /***/ },
-/* 19 */
+/* 23 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -575,7 +826,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 20 */
+/* 24 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -583,31 +834,13 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 21 */
+/* 25 */
 /***/ function(module, exports) {
 
 	module.exports = require("classname");
 
 /***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _BreadCumb = __webpack_require__(23);
-	
-	var _BreadCumb2 = _interopRequireDefault(_BreadCumb);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _BreadCumb2.default;
-
-/***/ },
-/* 23 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -616,19 +849,19 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _BreadCumb = __webpack_require__(24);
+	var _BreadCumb = __webpack_require__(27);
 	
 	var _BreadCumb2 = _interopRequireDefault(_BreadCumb);
 	
-	var _lodash = __webpack_require__(25);
+	var _lodash = __webpack_require__(28);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
-	var _reactRouter = __webpack_require__(4);
+	var _reactRouter = __webpack_require__(5);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -664,7 +897,7 @@ require("source-map-support").install();
 	exports.default = BreadCumb;
 
 /***/ },
-/* 24 */
+/* 27 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -673,37 +906,19 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 25 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = require("lodash");
 
 /***/ },
-/* 26 */
+/* 29 */
 /***/ function(module, exports) {
 
 
 
 /***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _Home = __webpack_require__(28);
-	
-	var _Home2 = _interopRequireDefault(_Home);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _Home2.default;
-
-/***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -712,11 +927,11 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _ProgressBar = __webpack_require__(29);
+	var _ProgressBar = __webpack_require__(31);
 	
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 	
@@ -738,25 +953,7 @@ require("source-map-support").install();
 	exports.default = Home;
 
 /***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _ProgressBar = __webpack_require__(30);
-	
-	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _ProgressBar2.default;
-
-/***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -765,15 +962,15 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _ProgressBar = __webpack_require__(31);
+	var _ProgressBar = __webpack_require__(32);
 	
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 	
-	var _classnames = __webpack_require__(17);
+	var _classnames = __webpack_require__(21);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
@@ -791,7 +988,7 @@ require("source-map-support").install();
 	exports.default = ProgressBar;
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -799,24 +996,6 @@ require("source-map-support").install();
 		"r1": "ProgressBar__r1-26Cz0",
 		"r2": "ProgressBar__r2-1Ug6d"
 	};
-
-/***/ },
-/* 32 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _Monitor = __webpack_require__(33);
-	
-	var _Monitor2 = _interopRequireDefault(_Monitor);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _Monitor2.default;
 
 /***/ },
 /* 33 */
@@ -830,7 +1009,7 @@ require("source-map-support").install();
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -838,27 +1017,35 @@ require("source-map-support").install();
 	
 	var _DataStatePreview2 = _interopRequireDefault(_DataStatePreview);
 	
-	var _DataParkingState = __webpack_require__(46);
+	var _DataParkingState = __webpack_require__(47);
 	
 	var _DataParkingState2 = _interopRequireDefault(_DataParkingState);
 	
-	var _Tips = __webpack_require__(52);
+	var _Tips = __webpack_require__(53);
 	
 	var _Tips2 = _interopRequireDefault(_Tips);
 	
-	var _Monitor = __webpack_require__(55);
+	var _Monitor = __webpack_require__(56);
 	
 	var _Monitor2 = _interopRequireDefault(_Monitor);
 	
-	var _ProgressBar = __webpack_require__(29);
+	var _ProgressBar = __webpack_require__(46);
 	
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 	
-	var _connectCanvas = __webpack_require__(56);
+	var _connectCanvas = __webpack_require__(57);
 	
 	var _connectCanvas2 = _interopRequireDefault(_connectCanvas);
 	
-	var _postActions = __webpack_require__(57);
+	var _postActions = __webpack_require__(58);
+	
+	var _reactRouter = __webpack_require__(5);
+	
+	var _reactRedux = __webpack_require__(7);
+	
+	var _Selector = __webpack_require__(61);
+	
+	var _Selector2 = _interopRequireDefault(_Selector);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -885,14 +1072,38 @@ require("source-map-support").install();
 	  }
 	
 	  _createClass(Monitor, [{
+	    key: 'componentDidUpdate',
+	    value: function componentDidUpdate(prevProps, prevState) {
+	      var _this2 = this;
+	
+	      var info = this.props.info;
+	
+	      if (info.id.length == 24 || this.props.params.id && this.props.params.id.length == 24) {
+	        (function () {
+	          var id = info.id || _this2.props.parmas.id;
+	          var dispatch = _this2.props.dispatch;
+	
+	          _this2.constructor.needs.forEach(function (need, index) {
+	            return dispatch((0, _postActions.infoAPI)(id));
+	          });
+	        })();
+	      }
+	    }
+	  }, {
 	    key: 'render',
 	    value: function render() {
+	      var info = this.props.info;
+	      var isShowSelector = info.id.length != 24 && !(this.props.params.id && this.props.params.id.length == 24);
 	      return _react2.default.createElement(
 	        'section',
 	        { className: _Monitor2.default.main },
-	        _react2.default.createElement(_DataStatePreview2.default, null),
-	        _react2.default.createElement(_DataParkingState2.default, null),
-	        _react2.default.createElement(_Tips2.default, null)
+	        isShowSelector ? _react2.default.createElement(_Selector2.default, null) : _react2.default.createElement(
+	          'div',
+	          null,
+	          _react2.default.createElement(_DataStatePreview2.default, null),
+	          _react2.default.createElement(_DataParkingState2.default, null),
+	          _react2.default.createElement(_Tips2.default, null)
+	        )
 	      );
 	    }
 	  }]);
@@ -901,7 +1112,9 @@ require("source-map-support").install();
 	}(_react2.default.Component);
 	
 	Monitor.needs = [_postActions.infoAPI];
-	exports.default = Monitor;
+	exports.default = (0, _reactRedux.connect)(function (state) {
+	  return state.monitor;
+	})(Monitor);
 
 /***/ },
 /* 34 */
@@ -917,7 +1130,7 @@ require("source-map-support").install();
 	
 	var _StatePreview2 = _interopRequireDefault(_StatePreview);
 	
-	var _reactRedux = __webpack_require__(6);
+	var _reactRedux = __webpack_require__(7);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -965,7 +1178,7 @@ require("source-map-support").install();
 	
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -981,7 +1194,7 @@ require("source-map-support").install();
 	
 	var _StateIndicator2 = _interopRequireDefault(_StateIndicator);
 	
-	var _ProgressBar = __webpack_require__(29);
+	var _ProgressBar = __webpack_require__(46);
 	
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 	
@@ -1033,7 +1246,7 @@ require("source-map-support").install();
 					_react2.default.createElement(
 						'dd',
 						{ className: _StatePreview2.default['state-content'] },
-						new Date().toLocaleString()
+						"时间容易造成前后端渲染不一致"
 					),
 					_react2.default.createElement('br', null),
 					_react2.default.createElement(
@@ -1096,7 +1309,7 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1147,7 +1360,7 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1195,7 +1408,7 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1203,7 +1416,7 @@ require("source-map-support").install();
 	
 	var _TabContent2 = _interopRequireDefault(_TabContent);
 	
-	var _classnames = __webpack_require__(17);
+	var _classnames = __webpack_require__(21);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
@@ -1261,7 +1474,7 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1337,12 +1550,30 @@ require("source-map-support").install();
 	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _ProgressBar = __webpack_require__(31);
+	
+	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = _ProgressBar2.default;
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	
-	var _reactRedux = __webpack_require__(6);
+	var _reactRedux = __webpack_require__(7);
 	
-	var _ParkingState = __webpack_require__(47);
+	var _ParkingState = __webpack_require__(48);
 	
 	var _ParkingState2 = _interopRequireDefault(_ParkingState);
 	
@@ -1367,7 +1598,7 @@ require("source-map-support").install();
 	exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDistpatchToProps)(_ParkingState2.default);
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1376,7 +1607,7 @@ require("source-map-support").install();
 	  value: true
 	});
 	
-	var _ParkingState = __webpack_require__(48);
+	var _ParkingState = __webpack_require__(49);
 	
 	var _ParkingState2 = _interopRequireDefault(_ParkingState);
 
@@ -1385,7 +1616,7 @@ require("source-map-support").install();
 	exports.default = _ParkingState2.default;
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1394,7 +1625,7 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1402,11 +1633,11 @@ require("source-map-support").install();
 	
 	var _Tab2 = _interopRequireDefault(_Tab);
 	
-	var _ParkingState = __webpack_require__(49);
+	var _ParkingState = __webpack_require__(50);
 	
 	var _ParkingState2 = _interopRequireDefault(_ParkingState);
 	
-	var _ParkingItem = __webpack_require__(50);
+	var _ParkingItem = __webpack_require__(51);
 	
 	var _ParkingItem2 = _interopRequireDefault(_ParkingItem);
 	
@@ -1414,7 +1645,7 @@ require("source-map-support").install();
 	
 	var _StateIndicator2 = _interopRequireDefault(_StateIndicator);
 	
-	var _ProgressBar = __webpack_require__(29);
+	var _ProgressBar = __webpack_require__(46);
 	
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 	
@@ -1451,7 +1682,7 @@ require("source-map-support").install();
 	exports.default = ParkingState;
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1462,7 +1693,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1471,15 +1702,15 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _ParkingItem = __webpack_require__(51);
+	var _ParkingItem = __webpack_require__(52);
 	
 	var _ParkingItem2 = _interopRequireDefault(_ParkingItem);
 	
-	var _classnames = __webpack_require__(17);
+	var _classnames = __webpack_require__(21);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
@@ -1530,7 +1761,7 @@ require("source-map-support").install();
 	exports.default = ParkingItem;
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1541,7 +1772,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1550,7 +1781,7 @@ require("source-map-support").install();
 	  value: true
 	});
 	
-	var _Tips = __webpack_require__(53);
+	var _Tips = __webpack_require__(54);
 	
 	var _Tips2 = _interopRequireDefault(_Tips);
 
@@ -1559,7 +1790,7 @@ require("source-map-support").install();
 	exports.default = _Tips2.default;
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1568,11 +1799,11 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _Tips = __webpack_require__(54);
+	var _Tips = __webpack_require__(55);
 	
 	var _Tips2 = _interopRequireDefault(_Tips);
 	
@@ -1612,7 +1843,7 @@ require("source-map-support").install();
 	exports.default = Tips;
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1621,7 +1852,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1629,7 +1860,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1640,7 +1871,7 @@ require("source-map-support").install();
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _react = __webpack_require__(3);
+	var _react = __webpack_require__(4);
 	
 	var _react2 = _interopRequireDefault(_react);
 	
@@ -1684,7 +1915,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1693,14 +1924,17 @@ require("source-map-support").install();
 		value: true
 	});
 	exports.infoAPI = infoAPI;
+	exports.selectorsAPI = selectorsAPI;
 	
-	var _isomorphicFetch = __webpack_require__(58);
+	var _isomorphicFetch = __webpack_require__(59);
 	
 	var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
 	
-	var _Constants = __webpack_require__(59);
+	var _Constants = __webpack_require__(60);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var BASE_URL = "http://localhost:3001";
 	
 	/// 通用Action
 	function networkError(error) {
@@ -1732,13 +1966,14 @@ require("source-map-support").install();
 	
 	// 异步action
 	
-	// 异步请求预览信息info, 这里requestUrl写死了，因为infoAPI是针对特定的地址进行请求，不需要暴露参数
-	// 另外，写死的话有利于server rendering中的fetchDependentData进行操作。
-	var requestUrl = "http://localhost:3000/api/info";
-	// 首屏向着渲染服务器请求数据，这里不能直接在客户端使用这个url，会发生跨域问题
+	// 如果仅仅是客户端调用那么requestUrl可以在使用的时候传入，但是这里是要配合server rendering自动完成数据
+	// 提取的，因此必须在这里明确请求的url地址。
 	function infoAPI(params) {
-		console.log('当前负载params是：');
-		console.log(params);
+		var requestUrl = BASE_URL + "/api/v1/vehicle/";
+	
+		requestUrl = requestUrl + (params.id || 0);
+		console.log('当前负载params.id是：' + params.id);
+		console.log('当前请求的url是' + requestUrl);
 		return {
 			types: [_Constants.REQUEST_MONITOR, _Constants.RECIEVE_MONITOR, _Constants.NETWORK_ERROR],
 			payload: { params: params, requestUrl: requestUrl }, // 这样的写法是很有讲究的，这是一个技巧性的问题，用于合并的时候非常有用
@@ -1750,15 +1985,31 @@ require("source-map-support").install();
 			}
 		};
 	}
+	
+	// callAPI 中间件中自动生成了action，因此这里不需要额外定义对应的同步action了。
+	// 获取
+	function selectorsAPI(params) {
+		var requestUrl = BASE_URL + "/api/v1/vehicles";
+		return {
+			types: [_Constants.REQUEST_ALL_VEHICLES, _Constants.RECIEVE_ALL_VEHICLES, _Constants.NETWORK_ERROR],
+			payload: { params: params, requestUrl: requestUrl },
+			shouldCallAPI: function shouldCallAPI(state) {
+				return true;
+			},
+			API: function API() {
+				return (0, _isomorphicFetch2.default)(requestUrl);
+			}
+		};
+	}
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 	module.exports = require("isomorphic-fetch");
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1778,24 +2029,10 @@ require("source-map-support").install();
 	
 	// 网络异常
 	var INVALIDATE_PREVIEW = exports.INVALIDATE_PREVIEW = "INVALIDATE_PREVIEW"; // 改变当前状态
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _configureStore = __webpack_require__(61);
-	
-	var _configureStore2 = _interopRequireDefault(_configureStore);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = _configureStore2.default;
+	// 获取全部停车场的数据
+	var REQUEST_ALL_VEHICLES = exports.REQUEST_ALL_VEHICLES = "request_all_vehicles_info";
+	var RECIEVE_ALL_VEHICLES = exports.RECIEVE_ALL_VEHICLES = 'receive_all_vehicles_info';
 
 /***/ },
 /* 61 */
@@ -1804,22 +2041,231 @@ require("source-map-support").install();
 	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _Selector = __webpack_require__(62);
+	
+	var _Selector2 = _interopRequireDefault(_Selector);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = _Selector2.default;
+
+/***/ },
+/* 62 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	
-	var _redux = __webpack_require__(62);
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _reduxThunk = __webpack_require__(63);
+	var _react = __webpack_require__(4);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var _Selector = __webpack_require__(63);
+	
+	var _Selector2 = _interopRequireDefault(_Selector);
+	
+	var _classnames = __webpack_require__(21);
+	
+	var _classnames2 = _interopRequireDefault(_classnames);
+	
+	var _connectSelector = __webpack_require__(64);
+	
+	var _connectSelector2 = _interopRequireDefault(_connectSelector);
+	
+	var _reactRedux = __webpack_require__(7);
+	
+	var _reactRouter = __webpack_require__(5);
+	
+	var _postActions = __webpack_require__(58);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	//  这里要变成注解的形式，用于包装高阶组件。
+	// 
+	
+	var Selector = function (_React$Component) {
+		_inherits(Selector, _React$Component);
+	
+		function Selector(props) {
+			_classCallCheck(this, Selector);
+	
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Selector).call(this, props));
+	
+			_this.componentDidMount = function () {
+				var dispatch = _this.props.dispatch;
+				dispatch((0, _postActions.selectorsAPI)());
+			};
+	
+			_this.displayName = 'Selector';
+			return _this;
+		}
+	
+		_createClass(Selector, [{
+			key: 'render',
+			value: function render() {
+				var _props = this.props;
+				var ids = _props.ids;
+				var names = _props.names;
+	
+				debugger;
+				return _react2.default.createElement(
+					'ul',
+					{ className: _Selector2.default["root"] },
+					ids.map(function (id, index) {
+						return _react2.default.createElement(
+							'li',
+							{ className: _Selector2.default["list-item"], key: index },
+							_react2.default.createElement(
+								_reactRouter.Link,
+								{ to: '/monitor/' + id, className: _Selector2.default["item-name"]
+								},
+								names[index]
+							),
+							_react2.default.createElement(
+								'span',
+								{ className: _Selector2.default["item-status"] },
+								'运行状态良好'
+							)
+						);
+					})
+				);
+			}
+		}]);
+	
+		return Selector;
+	}(_react2.default.Component);
+	
+	exports.default = (0, _reactRedux.connect)(function (state) {
+		return {
+			ids: state.selector.ids,
+			names: state.selector.names
+		};
+	})(Selector);
+
+/***/ },
+/* 63 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"root": "Selector__root-3Jr0A",
+		"list-item": "Selector__list-item-1nLGw",
+		"item-name": "Selector__item-name-1fIqq",
+		"item-status": "Selector__item-status-1dEcN"
+	};
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _Selector = __webpack_require__(61);
+	
+	var _Selector2 = _interopRequireDefault(_Selector);
+	
+	var _postActions = __webpack_require__(58);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var connectSelector = function connectSelector(_ref) {
+		var mapStateToProps = _ref.mapStateToProps;
+		var dispatch = _ref.dispatch;
+		return function (Compo) {
+			return function (_React$Component) {
+				_inherits(WrappedComponent, _React$Component);
+	
+				// 外部实际上操作的是这个组件
+	
+				function WrappedComponent(props) {
+					_classCallCheck(this, WrappedComponent);
+	
+					var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(WrappedComponent).call(this, props));
+	
+					_this.componentDidMount = function () {
+						dispatch((0, _postActions.selectorsAPI)());
+					};
+	
+					_this.render = function (ownProps) {
+						// ownProps来自于高阶组件接收到的参数
+						React.createElement(Compo, mapStateToProps(ownProps));
+					};
+	
+					_this.displayName = 'WrappedComponent';
+					return _this;
+				}
+	
+				return WrappedComponent;
+			}(React.Component);
+		};
+	};
+	
+	exports.default = connectSelector;
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _configureStore = __webpack_require__(66);
+	
+	var _configureStore2 = _interopRequireDefault(_configureStore);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = _configureStore2.default;
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _redux = __webpack_require__(67);
+	
+	var _reduxThunk = __webpack_require__(68);
 	
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 	
-	var _reduxLogger = __webpack_require__(64);
+	var _reduxLogger = __webpack_require__(69);
 	
 	var _reduxLogger2 = _interopRequireDefault(_reduxLogger);
 	
-	var _middlewares = __webpack_require__(65);
+	var _middlewares = __webpack_require__(70);
 	
-	var _reducers = __webpack_require__(66);
+	var _reducers = __webpack_require__(71);
 	
 	var _reducers2 = _interopRequireDefault(_reducers);
 	
@@ -1832,25 +2278,25 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 62 */
+/* 67 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux");
 
 /***/ },
-/* 63 */
+/* 68 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-thunk");
 
 /***/ },
-/* 64 */
+/* 69 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-logger");
 
 /***/ },
-/* 65 */
+/* 70 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1935,7 +2381,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 66 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1944,20 +2390,26 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _redux = __webpack_require__(62);
+	var _redux = __webpack_require__(67);
 	
-	var _monitorReducer = __webpack_require__(67);
+	var _monitorReducer = __webpack_require__(72);
 	
 	var _monitorReducer2 = _interopRequireDefault(_monitorReducer);
+	
+	var _selectorsReducer = __webpack_require__(74);
+	
+	var _selectorsReducer2 = _interopRequireDefault(_selectorsReducer);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	exports.default = (0, _redux.combineReducers)({
-		monitor: _monitorReducer2.default
+		monitor: _monitorReducer2.default, selector: _selectorsReducer2.default
 	});
+	
+	// 这个文件至关重要，直接决定了整个应用的状态树顶层结构。
 
 /***/ },
-/* 67 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1966,15 +2418,9 @@ require("source-map-support").install();
 		value: true
 	});
 	
-	var _lodash = __webpack_require__(25);
+	var _immutable = __webpack_require__(73);
 	
-	var _lodash2 = _interopRequireDefault(_lodash);
-	
-	var _immutable = __webpack_require__(68);
-	
-	var _Constants = __webpack_require__(59);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	var _Constants = __webpack_require__(60);
 	
 	// isFetching:false,
 	// info:{
@@ -1990,7 +2436,12 @@ require("source-map-support").install();
 	// distribute:{
 	// }
 	var initialState = {
-		info: { location: ["00.000", "00.000"], status: 0 },
+		info: {
+			id: 0,
+			name: '',
+			location: ["00.000", "00.000"],
+			status: 0
+		},
 		isFetching: false,
 		detail: {
 			total: 0,
@@ -2014,23 +2465,14 @@ require("source-map-support").install();
 					isFetching: true
 				}).toJS();
 			case _Constants.RECIEVE_MONITOR:
-				var _action$json = action.json;
-				var _action$json$info = _action$json.info;
-				var location = _action$json$info.location;
-				var status = _action$json$info.status;
-				var _action$json$detail = _action$json.detail;
-				var total = _action$json$detail.total;
-				var busy = _action$json$detail.busy;
-				var ordered = _action$json$detail.ordered;
-				var idle = _action$json$detail.idle;
-				var distribute = _action$json.distribute;
-	
+				// const {
+				// 	info:{id,location,status},
+				// 	detail:{total,busy,ordered,idle},
+				// 	distribute
+				// } = action.json;
 				var rs = (0, _immutable.fromJS)(state).merge({
-					isFetching: false,
-					info: { location: location, status: status },
-					detail: { total: total, busy: busy, ordered: ordered, idle: idle },
-					distribute: distribute
-				}).toJS();
+					isFetching: false
+				}).merge(action.json).toJS();
 				return rs;
 			case _Constants.NETWORK_ERROR:
 				return {
@@ -2042,13 +2484,45 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 68 */
+/* 73 */
 /***/ function(module, exports) {
 
 	module.exports = require("immutable");
 
 /***/ },
-/* 69 */
+/* 74 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _immutable = __webpack_require__(73);
+	
+	var _Constants = __webpack_require__(60);
+	
+	var initialState = { ids: [], names: [] };
+	
+	exports.default = function () {
+		var state = arguments.length <= 0 || arguments[0] === undefined ? initialState : arguments[0];
+		var action = arguments[1];
+	
+	
+		switch (action.type) {
+			case _Constants.REQUEST_ALL_VEHICLES:
+				return state;
+			case _Constants.RECIEVE_ALL_VEHICLES:
+				var rs = (0, _immutable.fromJS)(state).merge(action.json).toJS();
+				return rs;
+			default:
+				return state;
+		}
+	};
+
+/***/ },
+/* 75 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2062,7 +2536,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 70 */
+/* 76 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2073,12 +2547,12 @@ require("source-map-support").install();
 	
 	exports.default = function (dispatch, components, params) {
 		console.log(components);
+	
 		var needs = components.reduce(function (prev, current) {
-			// 备注一：needs是actionCreator的一个数组
 			return (current.needs || []).concat((current.WrappedComponent ? current.WrappedComponent.needs : []) || []).concat(prev);
 		}, []);
-		console.log('-----------------fetchDependentData中----------------');
 	
+		console.log('-----------------fetchDependentData中----------------');
 		console.log(needs);
 		var promises = needs.map(function (need) {
 			return dispatch(need(params));

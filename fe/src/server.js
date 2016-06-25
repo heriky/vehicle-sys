@@ -1,11 +1,14 @@
 import express from 'express';
 import path from 'path'
+import httpProxy from 'http-proxy';
 
 import React from 'react' ;
 import {createMemoryHistory,RouterContext,match} from 'react-router'
 import {renderToString} from 'react-dom/server'
 import { Provider } from 'react-redux' ;
 
+
+import {createLocation} from 'history/lib/LocationUtils'; // 用这个消除index.js.map 的恶心bug
 import routes from './routes'
 import configureStore from  './store' ;
 import renderPage from './lib/renderPage' ;
@@ -15,15 +18,41 @@ const app = express() ;
 const resourceDir = path.join(__dirname, '../../resources');
 app.use(express.static(resourceDir, {maxAge: '365d'}));
 
+
+const proxy = httpProxy.createProxyServer({
+  target: 'http://localhost:3000/api',
+});
+
+app.use('/api',(req,res)=>{
+	proxy.web(req,res) ;
+})
+proxy.on('error', (error, req, res) => {  //proxy错误处理s
+  let json;
+  if (error.code !== 'ECONNRESET') {
+    console.error('proxy error', error);
+  }
+  if (!res.headersSent) {
+    res.writeHead(500, {'content-type': 'application/json'});
+  }
+
+  json = {error: 'proxy_error', reason: error.message};
+  res.end(JSON.stringify(json));
+});
+
+
+
+/**************************服务器端路由渲染**************************************/
 const memoryHistory = createMemoryHistory() ;
 const store = configureStore() ;
 
 // 作为中间件使用
 app.use((req,res)=>{
-	console.log('当前请求的url：')
-	console.log(req.url)
-	console.log('-------------')
-	match({routes:routes,location:req.url},(err,redirect,renderProps)=>{ // 传入一个对象和回调！！
+
+	const location = createLocation(req.url);
+
+	match({routes,location},(err,redirect,renderProps)=>{ // 传入一个对象和回调！！
+		console.log('当前请求的url：' + req.url)
+
 		if(err){
 			console.info(err) ;
 			return res.status(500).send(err.message) ;

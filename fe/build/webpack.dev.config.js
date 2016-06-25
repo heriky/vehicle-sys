@@ -48,12 +48,12 @@ module.exports = {
 		// contentBase:'./src/',
 		// port: 8080,
 		// publicPath:''
-		proxy: {
-      '*': {             // 过滤对8080/api路由的请求到3001服务器上
-      	target:'http://127.0.0.1:3001',
-      	secure:false
-      }
-    },
+		// proxy: {
+  //     '*': {             // 过滤对8080/api路由的请求到3001服务器上
+  //     	target:'http://127.0.0.1:3001',
+  //     	secure:false
+  //     }
+  //   },
     host: '127.0.0.1'
 	},
 	devtool:'eval-source-map',

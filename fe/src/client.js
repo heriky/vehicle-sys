@@ -1,6 +1,6 @@
-require('es5-shim');
-require('es5-shim/es5-sham');
-require('console-polyfill');      // 兼容IE8
+// require('es5-shim');
+// require('es5-shim/es5-sham');
+// require('console-polyfill');      // 兼容IE8
 
 // react / redux /react-router
 import React from 'react' ;
@@ -15,7 +15,6 @@ import '../../resources/static/styles/base.scss';
 // redux
 import {Provider} from 'react-redux'
 import createStore from './store' ;
-import {infoAPI,detailAPI} from './actions/postActions' ;
 import fetch from 'isomorphic-fetch' ;
 
 const initialState = window.__INITIAL_STATE__ ;

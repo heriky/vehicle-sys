@@ -2,12 +2,14 @@ var express = require('express') ;
 var path = require('path') ;
 var bodyParser = require('body-parser') ;
 //var multer = require('multeer');
-var cookieParser = require('cookie-parser') ;
+var cookieParser = require('cookie-parser')() ;         // 这里更坑，导入的模块必须调用加括号，否则阻塞
 var session = require('express-session') ;
-var mongoStore = require('connect-mongo')(session);
+var mongoStore = require('connect-mongo')(session); // 这里坑，导入的模块要调用一下
 //var redisStore = require('connect-redis')(session);
 var mongoose = require('mongoose') ;
 var logger = require('morgan');
+
+var mqttServer = require('./plugins/mqttPlugin').mqttServer ;
 
 var app = express() ;
 
@@ -21,6 +23,11 @@ app.use(bodyParser.json()) ;
 app.use(bodyParser.urlencoded({extended:true}));
 //app.use(multer({dest:'/tmp'}).array('uploadFile'));
 app.use(cookieParser) ;
+//var dbUrl = 'mongodb://hankang@HANkang3402510@127.0.0.1:27017/vehicle';
+var dbUrl = 'mongodb://127.0.0.1/vehicle';
+mongoose.connect(dbUrl) // 首页开启数据库连接
+mongoose.Promise = global.Promise ; // mongoose在4.0之后需要插入外部的的Promise组件
+
 app.use(session({
 	secret: 'There is 128 chars recommended',
 	cookie: {
@@ -50,6 +57,7 @@ if ('dev' === app.get('env')) {
 var routes = require('./routes') ;
 app.use(routes) ;
 
+
 // 4.处理错误
 // 500 错误
 app.use(function(err,req,res,next){
@@ -70,6 +78,13 @@ app.use(function(err,req,res,next){
 
 
 // 5.开启监听
+
+// mqtt
+mqttServer.on('ready',()=>{
+	console.log('Mqtt Server is running on port 8000') ;
+})
+
+// http
 app.on('error',onError)
 app.on('listening',function(){
 	console.log('正在监听')
@@ -77,9 +92,16 @@ app.on('listening',function(){
 
 var port = process.env.PORT || 3000 ;
 app.set('port',port) ;
-app.listen(port,function(){   // 正在监听
-	console.log('Server is running on port '+port)
+
+// 设置https服务，app在这里充当HTTP Server的回调
+// var https = require('https')
+// https.createServer(options,app).listen(port,function(){
+// 	console.log('Server is running on port '+port)
+// })
+app.listen(port,function(){
+	console.log('api server is running on port '+port)
 })
+
 
 function onError(error) {
   if (error.syscall !== 'listen') {

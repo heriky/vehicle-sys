@@ -5,7 +5,7 @@ export default function HTML({appHtml,initialState}){
 		    {/*<!-- META 一般设置 -->*/}
 		    <meta charset="UTF-8">
 		    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-		    <meta name="viewport" content="width=device-width,initial-scale=1,maximun-scale=1,user-scalable=no" >
+		    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" >
 		   
 		    {/*<!--设置IE浏览器有限使用edge渲染 -->*/}
 		    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">

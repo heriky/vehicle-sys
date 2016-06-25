@@ -1,5 +1,5 @@
 import React,{propTypes} from 'react' ;
-import ProgressBar from  '../common/ProgressBar'
+import ProgressBar from  '../common/ProgressBar/ProgressBar'
 
 const Home = (props)=>(
 	<div>

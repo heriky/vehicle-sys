@@ -14,15 +14,6 @@ var nodeModules = fs.readdirSync(path.resolve(ROOT_PATH, 'node_modules'))
                         ext[mod] = 'commonjs ' + mod
                         return ext
                     }, {});
-console.log('ROOT_PATH:', ROOT_PATH)
-    // fs.readdirSync(path.resolve(ROOT_PATH,'node_modules'))  上面是官方的写法，这里是别人的写法
-    //     .filter(function(x) {
-    //         return ['.bin'].indexOf(x) === -1;
-    //     }).concat(['react-dom/server', 'react/addons',])
-    //     .forEach(function(mod) {
-    //         nodeModules[mod] = 'commonjs ' + mod;
-    //     });
-
 module.exports = {
 
     entry: path.resolve(SERVER_DIR, 'server.js'),

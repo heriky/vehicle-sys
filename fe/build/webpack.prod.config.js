@@ -23,15 +23,6 @@ module.exports = {
 		publicPath:'/static/dist' //配合服务器设置静态资源路径
 	},
 	plugins:[
-		new HtmlwebpackPlugin({
-			title:'React Component Test',
-			template:path.resolve(RESOURCE_PATH,'template.html'),
-			filename:'index.html',
-			// chunks 指定要引用entry文件中哪个几个入口个文件
-			chunks:'app',
-			// 表示script插入标签中
-			inject:'body'
-		}),
 		new webpack.optimize.UglifyJsPlugin({minimize:true}),
 		commonStyleExtract,
 		moduleStyleExtract 
@@ -39,10 +30,6 @@ module.exports = {
 	devtool:'eval-source-map',
 	resovle:{
 		extensions:['','.js','.jsx'] //必须先写''否则会找index.js.js和index.js.jsx
-		,
-		alias:{
-			//jquery:'../dist/jquery.min.js'
-		}
 	},
 	
 	postcss: function () {

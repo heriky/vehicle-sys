@@ -60,3 +60,14 @@ $minHeight:2.34rem ;
 .btn-stop:hover{
 	background-color: #f80;
 }
+
+
+
+@media only screen and (max-width: 768px){
+	.btn-stop{
+		position:static;
+		display:block;
+		width:50%;
+		margin:0 auto .1rem;
+	}
+}

@@ -1,7 +1,12 @@
 .root{
 	position: absolute;
 	top:0;right:.3rem;
-	height:60px;
 	height:.6rem;
 	line-height: .6rem;
+}
+
+@media screen and (max-width:768px) {
+	.root{
+		display:none;
+	}
 }

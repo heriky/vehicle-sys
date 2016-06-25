@@ -12,3 +12,8 @@ export const RECIEVE_DETAIL = 'RECIEVE_DETAIL'
 
 // 网络异常
 export const INVALIDATE_PREVIEW = "INVALIDATE_PREVIEW" ; // 改变当前状态
+
+
+// 获取全部停车场的数据
+export const REQUEST_ALL_VEHICLES = "request_all_vehicles_info"  ;
+export const RECIEVE_ALL_VEHICLES = 'receive_all_vehicles_info'

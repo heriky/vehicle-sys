@@ -1,4 +1,3 @@
-import _ from 'lodash' ;
 import {fromJS,toJS,merge,mergeDeep} from 'immutable' ;
 import {
 	REQUEST_MONITOR,
@@ -19,7 +18,12 @@ import {
 // distribute:{
 // }
 const initialState = {
-	info:{location:["00.000","00.000"],status:0},
+	info:{
+		id:0,
+		name:'',
+		location:["00.000","00.000"],
+		status:0
+	},
 	isFetching:false,
   detail:{
 		total:0,
@@ -39,17 +43,16 @@ export default (state=initialState,action)=>{
 				isFetching:true
 			}).toJS();
 		case RECIEVE_MONITOR:
-			const {
-				info:{location,status},
-				detail:{total,busy,ordered,idle},
-				distribute
-			} = action.json;
+			// const {
+			// 	info:{id,location,status},
+			// 	detail:{total,busy,ordered,idle},
+			// 	distribute
+			// } = action.json;
 			const rs = fromJS(state).merge({
-				isFetching:false,
-				info:{location,status},
-				detail:{total,busy,ordered,idle},
-				distribute: distribute
-			}).toJS()
+				isFetching:false
+			})
+			.merge(action.json)
+			.toJS()
 			return rs;
 		case NETWORK_ERROR:
 			return {
