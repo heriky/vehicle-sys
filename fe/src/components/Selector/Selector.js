@@ -14,6 +14,10 @@ class Selector extends React.Component {
         this.displayName = 'Selector';
     }
 
+    static nees = [
+			selectorsAPI
+    ]
+
     componentDidMount = ()=>{
     	const dispatch = this.props.dispatch ;
 			dispatch(selectorsAPI()) ;
@@ -21,7 +25,6 @@ class Selector extends React.Component {
 
     render() {
 			const {ids,names} = this.props ;
-			debugger;
       return <ul className={styles["root"]}>
 				{ids.map((id,index)=>
 					<li className={styles["list-item"]} key={index}>

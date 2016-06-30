@@ -1,4 +1,4 @@
-import Selector from '../../components/Selector' ;
+import Selector from '../../components/Selector/Selector' ;
 import {selectorsAPI} from '../../actions/postActions' ;
 
  const connectSelector = ({mapStateToProps,dispatch})=>(Compo)=>(

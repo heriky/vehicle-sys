@@ -10,7 +10,7 @@ import { Provider } from 'react-redux' ;
 
 import {createLocation} from 'history/lib/LocationUtils'; // 用这个消除index.js.map 的恶心bug
 import routes from './routes'
-import configureStore from  './store' ;
+import configureStore from  './store/configureStore' ;
 import renderPage from './lib/renderPage' ;
 import fetchDependentData from './lib/fetchDependentData'
 
@@ -19,6 +19,7 @@ const resourceDir = path.join(__dirname, '../../resources');
 app.use(express.static(resourceDir, {maxAge: '365d'}));
 
 
+/***********************************2. 代理费服务器*****************************/
 const proxy = httpProxy.createProxyServer({
   target: 'http://localhost:3000/api',
 });
@@ -41,7 +42,7 @@ proxy.on('error', (error, req, res) => {  //proxy错误处理s
 
 
 
-/**************************服务器端路由渲染**************************************/
+/**************************3.服务器端路由渲染**************************************/
 const memoryHistory = createMemoryHistory() ;
 const store = configureStore() ;
 
@@ -67,20 +68,21 @@ app.use((req,res)=>{
 		fetchDependentData(store.dispatch,renderProps.components,renderProps.params)
 			.then(()=>{ // then 调用时，store状态已经发生了变化
 				// 将app应用渲染成html字符串
-				// renderToString()的时机最好放在依赖数据全部返回，store状态变化后，以此避免前后端不一致问题
+				// renderToString()的时机最好放在依赖数据全部返回，store状态变化后，以此【避免前后端不一致问题】
 				const appHtml = renderToString(
 					<Provider store = {store}>
 						<RouterContext {...renderProps}/>
 					</Provider>
 				);
+				
 				return renderPage(appHtml,store.getState()) // 内部promise执行完成后相当于dispatch了新动作，导致state更新了。！！
 			})
 			.then(html=>{
 				return res.status(200).end(html)
 			})
 			.catch(err=>{
-				console.log(err) ;
-				res.status(500).send('Internal Error!')
+				console.log(err.message) ;
+				res.status(500).send('抓取数据错误！！')
 			})
 	})
 });

@@ -1,13 +1,28 @@
 const mqttConst = require('./mqtt-constants') ;
 const USER_OPERATE = mqttConst.userOperate ;
+const SENSOR_CHANGED  = mqttConst.sensorChanged;
 
 const mosca = require('mosca') ;
+
+var pubsubsettings = {
+  //using ascoltatore
+  type: 'mongo',        
+  url: 'mongodb://localhost:27017/mqtt',
+  pubsubCollection: 'ascoltatori',
+  mongo: {}
+};
+
 const MqttServer = new mosca.Server({
-	port: 8000
+	backend:pubsubsettings,
+	port: 1883
 }) ;
+
 MqttServer.on('clientConnected',(client)=>{
 	console.log('client connected',clinet.id) ;
 }) ;
+MqttServer.on('clientDisconnected',(client)=>{
+	console.log('Clinet Disconnected:',client.id)
+})
 
 /**
  * 监听主题消息,如果有某个mqtt客户端发布消息了，会集中在这里处理
@@ -19,6 +34,9 @@ MqttServer.on('published',(packet,client)=>{
 		case USER_OPERATE:
 			// 来自于用户在客户端"占车位"的操作，在改变数据库状态后发布这样一个消息
 			console.log('【收到消息】:\n',`主题${topic}`,`负载${packet.payload}`)
+			break;
+		case SENSOR_CHANGED:
+			console.log('【收到消息】:\n',`主题${topic}`,`负载${packet.payload}`) ;
 			break;
 		default:
 			break;

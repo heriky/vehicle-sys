@@ -1,4 +1,4 @@
-import StatePreview from '../components/StatePreview' ;
+import StatePreview from '../components/StatePreview/StatePreview' ;
 import {connect} from 'react-redux' ;
 
 function mapStateToProps(state,ownProps){

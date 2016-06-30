@@ -9,12 +9,12 @@ import {Router,browserHistory} from 'react-router'
 import routes from './routes' ;
 
 // components
-import App from './components/App' ;
+import App from './components/App/App' ;
 import '../../resources/static/styles/base.scss';
 
 // redux
 import {Provider} from 'react-redux'
-import createStore from './store' ;
+import createStore from './store/configureStore' ;
 import fetch from 'isomorphic-fetch' ;
 
 const initialState = window.__INITIAL_STATE__ ;

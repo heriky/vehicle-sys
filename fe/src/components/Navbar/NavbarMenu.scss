@@ -66,7 +66,7 @@ $largeScreen:1200px;
 	.toggle{
 		display:block ;
 	}
-	.toggle:focus + .root{
+	.toggle:active + .root{
 		display:block;
 	}
 
@@ -78,10 +78,10 @@ $largeScreen:1200px;
 		top:100%;
 		left:0;
 		background-color: #666;
+		z-index: 2;
 	}
 	
 	.menu-item{
-		display:block;
 		float:none;
 		text-align:center;
 	}

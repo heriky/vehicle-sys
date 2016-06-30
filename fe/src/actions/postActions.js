@@ -3,7 +3,7 @@ import {REQUEST_MONITOR,RECIEVE_MONITOR,NETWORK_ERROR} from './Constants' ;
 import {REQUEST_DETAIL,RECIEVE_DETAIL} from './Constants' ;
 import {REQUEST_ALL_VEHICLES, RECIEVE_ALL_VEHICLES } from './Constants' ;
 
-const  BASE_URL = "http://localhost:3001";
+const  BASE_URL =  typeof window === 'undefined' ? "http://localhost:3000" : "http://localhost:3001"
 
 /// 通用Action
 function networkError(error){
@@ -40,8 +40,8 @@ function receiveInfo(json,params){ // 发送请求返回之后
 export function infoAPI(params){ 
 	let requestUrl = BASE_URL+"/api/v1/vehicle/" ; 
 
-	requestUrl = requestUrl + (params.id || 0 );
 	console.log('当前负载params.id是：'+params.id) ;
+	requestUrl = requestUrl + (params.id || 0 );
 	console.log('当前请求的url是' +  requestUrl) ;
 	return {
 		types:[REQUEST_MONITOR,RECIEVE_MONITOR,NETWORK_ERROR],

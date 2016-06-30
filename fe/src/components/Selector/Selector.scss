@@ -3,6 +3,7 @@
 	background-color: #ccc;
 	box-shadow: 0 0 1px ;
 	border-radius:.03rem;
+	margin:0 auto;
 }
 .list-item{
 	line-height: .4rem;
@@ -25,4 +26,8 @@
 	float: right;
 	text-align: right;
 	margin-right: 20px;
+}
+
+@media screen and (max-width: 992px){
+		margin-left:2%;
 }

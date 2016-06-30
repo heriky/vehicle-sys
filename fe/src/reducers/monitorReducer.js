@@ -48,7 +48,7 @@ export default (state=initialState,action)=>{
 			// 	detail:{total,busy,ordered,idle},
 			// 	distribute
 			// } = action.json;
-			const rs = fromJS(state).merge({
+			const rs = fromJS(state).merge(action.json).merge({
 				isFetching:false
 			})
 			.merge(action.json)

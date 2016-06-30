@@ -3,7 +3,7 @@ export default (dispatch,components,params)=>{
 
 	const needs = components.reduce( (prev, current) => {
     return (current.needs || [])
-      .concat((current.WrappedComponent ? current.WrappedComponent.needs : []) || [])
+      // .concat((current.WrappedComponent ? current.WrappedComponent.needs : []) || []) //组件上的static属性会映射到包装他的高阶组件上去
       .concat(prev);
     }, []);
 	

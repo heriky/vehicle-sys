@@ -161,7 +161,7 @@ exports.fetch = (req,res)=>{
 	console.log('当前id为:'+id) ;
 
 	if (id && id.length!==24) {   // 防止index.js.map又来骚扰
-		return ;
+		return res.end('无效的id');
 	}
 
 	Vehicle.findById(id,function(err,vehicle){ // 当前停车场
@@ -175,12 +175,11 @@ exports.fetch = (req,res)=>{
 			throw Error("无效的停车场id")} ;
 		
 		const sensors = vehicle.sensors ; // 当前停车场的传感器们
-
 		var information = {
 			info:{
 				id:vehicle._id,
 				name:vehicle.name,
-				location: vehicle.loaction,
+				location: vehicle.location,
 				status: 1,
 			},
 			detail:{

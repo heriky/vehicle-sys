@@ -1,9 +1,9 @@
 import React,{PropTypes} from 'react' ;
-import Tab from '../common/Tab' ;
+import Tab from '../common/Tab/Tab' ;
 import styles from './ParkingState.scss'
 import ParkingItem from './ParkingItem' ;
 import StateIndicator from '../StatePreview/StateIndicator' ;
-import ProgressBar from '../common/ProgressBar'
+import ProgressBar from '../common/ProgressBar/ProgressBar'
 
 // 这里通过clearfix向Tab内部添加自定义的样式，按要求覆盖样式。
 const ParkingState = ({total,parking,isFetching})=>(

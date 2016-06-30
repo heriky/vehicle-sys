@@ -1,8 +1,8 @@
 import React,{PropTypes} from 'react' ;
-import Tab from '../common/Tab' ;
+import Tab from '../common/Tab/Tab' ;
 import styles from './StatePreview.scss'
 import StateIndicator from './StateIndicator' ;
-import ProgressBar from '../common/ProgressBar' ;
+import ProgressBar from '../common/ProgressBar/ProgressBar' ;
 const StatePreview = ({info,detail,isFetching})=>{
 	const {location,status} = info;
 	return (
@@ -22,7 +22,7 @@ const StatePreview = ({info,detail,isFetching})=>{
 					<dt className = {styles['state-title']}>经纬度:</dt>
 					<dd className = {styles['state-content']}>{`${location[0]} / ${location[1]}`}</dd>
 					<dt className = {styles['state-title']}>当前位于:</dt>
-					<dd className = {styles['state-content']}>内容生成4</dd>
+					<dd className = {styles['state-content']}>{location[2]}</dd>
 				</dl>
 				<button className = {styles['btn-stop']}>停止监控</button>
 			</div>

@@ -39,7 +39,6 @@ export default (appHtml,initialState)=>(
 	    </script>
 	    <script src='/static/dist/bundle.js'></script>
 	</body>
-	<!-- <script type="text/javascript" src='../scripts/canvas.js'></script>> -->
 	</html>
 `
 ) ;

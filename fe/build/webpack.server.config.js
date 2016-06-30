@@ -47,5 +47,5 @@ module.exports = {
     },
     // 处理sourcemap用于快速定位错误
     plugins: [new webpack.BannerPlugin('require("source-map-support").install();',{ raw: true, entryOnly: false })],
-    devtool: 'sourcemap'
+    //devtool: 'sourcemap'
 }
