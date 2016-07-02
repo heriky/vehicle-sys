@@ -14,11 +14,16 @@ var pubsubsettings = {
 
 const MqttServer = new mosca.Server({
 	backend:pubsubsettings,
-	port: 1883
+	port: 1883,
+	http:{
+		port:8080,
+		bundle:true,
+		static: './'
+	}
 }) ;
 
 MqttServer.on('clientConnected',(client)=>{
-	console.log('client connected',clinet.id) ;
+	console.log('client connected',client.id) ;
 }) ;
 MqttServer.on('clientDisconnected',(client)=>{
 	console.log('Clinet Disconnected:',client.id)

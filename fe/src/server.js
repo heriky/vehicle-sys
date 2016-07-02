@@ -14,17 +14,39 @@ import configureStore from  './store/configureStore' ;
 import renderPage from './lib/renderPage' ;
 import fetchDependentData from './lib/fetchDependentData'
 
+//var mqttClient = require("./lib/mqttClient") ;
+var mqtt    = require('mqtt');
+
 const app = express() ;
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+
+
 const resourceDir = path.join(__dirname, '../../resources');
 app.use(express.static(resourceDir, {maxAge: '365d'}));
 
 
-/***********************************2. 代理费服务器*****************************/
+/***********************************1. 代理费服务器*****************************/
 const proxy = httpProxy.createProxyServer({
   target: 'http://localhost:3000/api',
 });
 
+var subscribeList = [] ; // 订阅列表，记录当前已经开启订阅的id（客户端）
 app.use('/api',(req,res)=>{
+
+	// 处理消息订阅
+	var matched = null ;
+	if ((matched = req.originalUrl.match(/\/api\/v1\/vehicle\/(\w{24})/)) != null) {
+		const id = matched[1] ;
+		console.log('是时候该开启消息订阅了,订阅的id为:'+ id) ;
+		if (!(id in subscribeList)) {
+			subscribeList.push(id) ;
+
+			//require('./lib/mqttClient2.js').subscribe(io) ;
+		}
+	}
+
+	// 处理代理转发
 	proxy.web(req,res) ;
 })
 proxy.on('error', (error, req, res) => {  //proxy错误处理s
@@ -42,7 +64,7 @@ proxy.on('error', (error, req, res) => {  //proxy错误处理s
 
 
 
-/**************************3.服务器端路由渲染**************************************/
+/**************************2.服务器端路由渲染**************************************/
 const memoryHistory = createMemoryHistory() ;
 const store = configureStore() ;
 
@@ -88,7 +110,16 @@ app.use((req,res)=>{
 });
 
 
-app.listen(3001,()=>{  // 渲染服务器(api代理服务器)运行在3001端口
+// 不直接用app，因为server里面包含着socket.io的服务
+server.listen(3001,()=>{  // 渲染服务器(api代理服务器)运行在3001端口
 	console.log('Render(Proxy) Server is running on port 3001') ;
 })
+
+io.on('connection', function (socket) {
+	console.log('成功连接至socket.io服务器') ;
+  // socket.emit('news', { hello: 'world' });
+  // socket.on('my other event', function (data) {
+  //   console.log(data);
+  // });
+});
 

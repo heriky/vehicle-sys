@@ -73,7 +73,7 @@ app.use(function(err,req,res,next){
 app.use(function(err,req,res,next){
 	var err = new Error('404 NOT FOUND!') ;
 	console.log(err.stack) ;
-	res.status(404).send('404 NOT FOUND!')
+	res.status(404).send('404 NOT FOUND!') ;
 })
 
 
@@ -81,8 +81,9 @@ app.use(function(err,req,res,next){
 
 // mqtt
 mqttServer.on('ready',()=>{
-	console.log('Mqtt Server is running on port 8000') ;
+	console.log('Mqtt Server is running on port 1883\n','Websocket run on port 8080') ;
 })
+
 
 // http
 app.on('error',onError)

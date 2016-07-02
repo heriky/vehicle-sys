@@ -28,9 +28,10 @@ export default (appHtml,initialState)=>(
 		
 	    <!-- html shim -->
 	    <!--[if lt IE 9]>
-	      <script src="//cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	      <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
 	    <![endif]-->
 	    <script src="http://cdn.bootcss.com/es5-shim/4.5.8/es5-shim.min.js"></script>
+	    <script src="/static/scripts/browserMqtt.js"></script>
 	</head>
 	<body>
 	    <div id="react-app">${appHtml}</div>

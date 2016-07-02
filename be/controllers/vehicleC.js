@@ -115,6 +115,22 @@ exports.updateSensor = function(req,res){
 
 				if (_vehicle) {
 					console.log('更新成功') ; 
+
+					// 更新成功后同时当前broker推送sensor_changed 主题的mqtt消息到各个订阅的客户端，以便使用。
+					var message = {
+						topic:mqttConst.sensorChanged+id, // 当前停车场的id标志
+						payload:{
+							sensorId,
+							status,
+							statusMsg
+						},		// 当前停车场的所有数据
+						qos:0,
+						retain:false
+					}
+					mqttServer.publish(JSON.stringify(message),function(){
+						console.log(`主题消息${mqttConst.sensorChanged+id}成功发送！`) ;
+					})
+
 					res.status(201).send(JSON.stringify(_vehicle)) ;
 				}else{
 					console.log('无任何更新') ; 

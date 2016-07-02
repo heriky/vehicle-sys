@@ -75,32 +75,52 @@ require("source-map-support").install();
 
 	var _routes2 = _interopRequireDefault(_routes);
 
-	var _configureStore = __webpack_require__(58);
+	var _configureStore = __webpack_require__(60);
 
 	var _configureStore2 = _interopRequireDefault(_configureStore);
 
-	var _renderPage = __webpack_require__(67);
+	var _renderPage = __webpack_require__(69);
 
 	var _renderPage2 = _interopRequireDefault(_renderPage);
 
-	var _fetchDependentData = __webpack_require__(68);
+	var _fetchDependentData = __webpack_require__(70);
 
 	var _fetchDependentData2 = _interopRequireDefault(_fetchDependentData);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	//var mqttClient = require("./lib/mqttClient") ;
 	// 用这个消除index.js.map 的恶心bug
-
+	var mqtt = __webpack_require__(56);
 
 	var app = (0, _express2.default)();
+	var server = __webpack_require__(71).Server(app);
+	var io = __webpack_require__(72)(server);
+
 	var resourceDir = _path2.default.join(__dirname, '../../resources');
 	app.use(_express2.default.static(resourceDir, { maxAge: '365d' }));
 
+	/***********************************1. 代理费服务器*****************************/
 	var proxy = _httpProxy2.default.createProxyServer({
 		target: 'http://localhost:3000/api'
 	});
 
+	var subscribeList = []; // 订阅列表，记录当前已经开启订阅的id（客户端）
 	app.use('/api', function (req, res) {
+
+		// 处理消息订阅
+		var matched = null;
+		if ((matched = req.originalUrl.match(/\/api\/v1\/vehicle\/(\w{24})/)) != null) {
+			var id = matched[1];
+			console.log('是时候该开启消息订阅了,订阅的id为:' + id);
+			if (!(id in subscribeList)) {
+				subscribeList.push(id);
+
+				//require('./lib/mqttClient2.js').subscribe(io) ;
+			}
+		}
+
+		// 处理代理转发
 		proxy.web(req, res);
 	});
 	proxy.on('error', function (error, req, res) {
@@ -117,7 +137,7 @@ require("source-map-support").install();
 		res.end(JSON.stringify(json));
 	});
 
-	/**************************服务器端路由渲染**************************************/
+	/**************************2.服务器端路由渲染**************************************/
 	var memoryHistory = (0, _reactRouter.createMemoryHistory)();
 	var store = (0, _configureStore2.default)();
 
@@ -161,9 +181,18 @@ require("source-map-support").install();
 		});
 	});
 
-	app.listen(3001, function () {
+	// 不直接用app，因为server里面包含着socket.io的服务
+	server.listen(3001, function () {
 		// 渲染服务器(api代理服务器)运行在3001端口
 		console.log('Render(Proxy) Server is running on port 3001');
+	});
+
+	io.on('connection', function (socket) {
+		console.log('成功连接至socket.io服务器');
+		// socket.emit('news', { hello: 'world' });
+		// socket.on('my other event', function (data) {
+		//   console.log(data);
+		// });
 	});
 	/* WEBPACK VAR INJECTION */}.call(exports, "fe\\src"))
 
@@ -479,7 +508,7 @@ require("source-map-support").install();
 
 	var _Monitor2 = _interopRequireDefault(_Monitor);
 
-	var _Selector = __webpack_require__(55);
+	var _Selector = __webpack_require__(57);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
@@ -1040,6 +1069,8 @@ require("source-map-support").install();
 
 	var _postActions = __webpack_require__(52);
 
+	var _updateAction = __webpack_require__(55);
+
 	var _reactRouter = __webpack_require__(5);
 
 	var _reactRedux = __webpack_require__(7);
@@ -1076,6 +1107,9 @@ require("source-map-support").install();
 	      var info = this.props.info;
 
 	      if (info.id.length == 24 || this.props.params.id && this.props.params.id.length == 24) {
+	        var mqtt;
+	        var client;
+
 	        (function () {
 	          var id = info.id || _this2.props.params.id;
 	          var dispatch = _this2.props.dispatch;
@@ -1083,6 +1117,35 @@ require("source-map-support").install();
 	          _this2.constructor.needs.forEach(function (need, index) {
 	            return dispatch((0, _postActions.infoAPI)({ id: id })); // infoAPI接收的是一个带有id的对象！！这里不能直接传递id值，而应该传{id}
 	          });
+
+	          if (typeof window !== 'undefined') {
+	            // var mqttClient = require('../../lib/mqttClient') ;
+	            // mqttClient.subscribe(id) ;
+
+	            mqtt = __webpack_require__(56);
+	            client = mqtt.connect('ws://localhost:8080');
+
+
+	            client.on('connect', function () {
+	              client.subscribe('presence');
+	              client.publish('presence', 'Hello mqtt');
+	            });
+
+	            client.on('message', function (topic, message) {
+	              // message is Buffer
+	              console.log(message.toString());
+	              client.end();
+	            });
+
+	            // var ioClient = require('socket.io-client') ;
+	            // var socket = ioClient.connect('http://localhost:3001');
+	            //   socket.on(`sensor_changed${id}`, function (data) {
+	            //     console.log('客户端收到的内容为:',data); // data为json字符串的形式
+
+	            //     dispatch(receiveUpdateData(JSON.parse(data))) ;
+	            //   });
+	            // 
+	          }
 	        })();
 	      } else {
 	          _reactRouter.browserHistory.push('/monitor');
@@ -1883,8 +1946,38 @@ require("source-map-support").install();
 	var REQUEST_ALL_VEHICLES = exports.REQUEST_ALL_VEHICLES = "request_all_vehicles_info";
 	var RECIEVE_ALL_VEHICLES = exports.RECIEVE_ALL_VEHICLES = 'receive_all_vehicles_info';
 
+	// 接受服务器推送，进行更新。
+
+	var RECIEVE_UPDATE_DATA = exports.RECIEVE_UPDATE_DATA = 'receive_update_data';
+
 /***/ },
 /* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.receiveUpdateData = undefined;
+
+	var _Constants = __webpack_require__(54);
+
+	var receiveUpdateData = exports.receiveUpdateData = function receiveUpdateData(data) {
+		return {
+			type: _Constants.RECIEVE_UPDATE_DATA,
+			data: data
+		};
+	};
+
+/***/ },
+/* 56 */
+/***/ function(module, exports) {
+
+	module.exports = require("mqtt");
+
+/***/ },
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1899,7 +1992,7 @@ require("source-map-support").install();
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Selector = __webpack_require__(56);
+	var _Selector = __webpack_require__(58);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
@@ -1907,7 +2000,7 @@ require("source-map-support").install();
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
-	var _connectSelector = __webpack_require__(57);
+	var _connectSelector = __webpack_require__(59);
 
 	var _connectSelector2 = _interopRequireDefault(_connectSelector);
 
@@ -1988,7 +2081,7 @@ require("source-map-support").install();
 	})(Selector);
 
 /***/ },
-/* 56 */
+/* 58 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1999,7 +2092,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 57 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2008,7 +2101,7 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _Selector = __webpack_require__(55);
+	var _Selector = __webpack_require__(57);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
@@ -2057,7 +2150,7 @@ require("source-map-support").install();
 	exports.default = connectSelector;
 
 /***/ },
-/* 58 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2066,19 +2159,19 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _redux = __webpack_require__(59);
+	var _redux = __webpack_require__(61);
 
-	var _reduxThunk = __webpack_require__(60);
+	var _reduxThunk = __webpack_require__(62);
 
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-	var _reduxLogger = __webpack_require__(61);
+	var _reduxLogger = __webpack_require__(63);
 
 	var _reduxLogger2 = _interopRequireDefault(_reduxLogger);
 
-	var _APIMiddleware = __webpack_require__(62);
+	var _APIMiddleware = __webpack_require__(64);
 
-	var _reducers = __webpack_require__(63);
+	var _reducers = __webpack_require__(65);
 
 	var _reducers2 = _interopRequireDefault(_reducers);
 
@@ -2091,25 +2184,25 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 59 */
+/* 61 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux");
 
 /***/ },
-/* 60 */
+/* 62 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-thunk");
 
 /***/ },
-/* 61 */
+/* 63 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-logger");
 
 /***/ },
-/* 62 */
+/* 64 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2194,7 +2287,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 63 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2203,13 +2296,13 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _redux = __webpack_require__(59);
+	var _redux = __webpack_require__(61);
 
-	var _monitorReducer = __webpack_require__(64);
+	var _monitorReducer = __webpack_require__(66);
 
 	var _monitorReducer2 = _interopRequireDefault(_monitorReducer);
 
-	var _selectorsReducer = __webpack_require__(66);
+	var _selectorsReducer = __webpack_require__(68);
 
 	var _selectorsReducer2 = _interopRequireDefault(_selectorsReducer);
 
@@ -2222,7 +2315,7 @@ require("source-map-support").install();
 	// 这个文件至关重要，直接决定了整个应用的状态树顶层结构。
 
 /***/ },
-/* 64 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2231,7 +2324,7 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _immutable = __webpack_require__(65);
+	var _immutable = __webpack_require__(67);
 
 	var _Constants = __webpack_require__(54);
 
@@ -2285,25 +2378,35 @@ require("source-map-support").install();
 				// } = action.json;
 				var rs = (0, _immutable.fromJS)(state).merge(action.json).merge({
 					isFetching: false
-				}).merge(action.json).toJS();
+				}).toJS();
 				return rs;
 			case _Constants.NETWORK_ERROR:
 				return {
 					error: 'Network error occrued ,see the detail:' + action.error.toString()
 				};
+			case _Constants.RECIEVE_UPDATE_DATA:
+				//sensorId,
+				//status,
+				//statusMsg
+				var _action$data = action.data;
+				var sensorId = _action$data.sensorId;
+				var status = _action$data.status;
+				var statusMsg = _action$data.statusMsg; // 找出前一个，更新！
+
+				return (0, _immutable.fromJS)(state).mergeDeep({}).toJS();
 			default:
 				return state;
 		}
 	};
 
 /***/ },
-/* 65 */
+/* 67 */
 /***/ function(module, exports) {
 
 	module.exports = require("immutable");
 
 /***/ },
-/* 66 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2312,7 +2415,7 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _immutable = __webpack_require__(65);
+	var _immutable = __webpack_require__(67);
 
 	var _Constants = __webpack_require__(54);
 
@@ -2335,7 +2438,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 67 */
+/* 69 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2345,11 +2448,11 @@ require("source-map-support").install();
 	});
 
 	exports.default = function (appHtml, initialState) {
-		return "\n\t<!DOCTYPE html>\n\t<html lang=\"zh\">\n\t<head>\n\t    <!-- META 一般设置 -->\n\t    <meta charset=\"UTF-8\">\n\t    <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\">\n\t    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1,maximun-scale=1,user-scalable=no\" >\n\t   \n\t    <!--设置IE浏览器有限使用edge渲染 -->\n\t    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\">\n\t    <meta name=\"HandheldFriendly\" content=\"true\">\n\t    <title>Document</title>\n\n\t    <!-- link优化 -->\n\t    <link rel=\"shortcut icon\" href=\"/static/favicon.ico\">\n\t    <link rel=\"icon\" href=\"/static/favicon.ico\">\n\t    <link href=\"/static/dist/common.css\" rel = 'stylesheet'/>\n\t\t\t<link href=\"/static/dist/module.css\" rel = 'stylesheet'/>\n\n\t    <!-- 国内双核浏览器，特别是360，使用渲染引擎从左到右 -->\n\t    <meta name=\"renderer\" content=\"webkit|ie-comp|ie-stand\">\n\t    <!-- seo优化 -->\n\t    <meta name=\"author\" content=\"\">\n\t    <meta name=\"keywords\" content=\"\">\n\t\t\n\t    <!-- html shim -->\n\t    <!--[if lt IE 9]>\n\t      <script src=\"//cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js\"></script>\n\t    <![endif]-->\n\t    <script src=\"http://cdn.bootcss.com/es5-shim/4.5.8/es5-shim.min.js\"></script>\n\t</head>\n\t<body>\n\t    <div id=\"react-app\">" + appHtml + "</div>\n\t    <script>\n\t\t\t\twindow.__INITIAL_STATE__ = " + JSON.stringify(initialState) + "\n\t    </script>\n\t    <script src='/static/dist/bundle.js'></script>\n\t</body>\n\t</html>\n";
+		return "\n\t<!DOCTYPE html>\n\t<html lang=\"zh\">\n\t<head>\n\t    <!-- META 一般设置 -->\n\t    <meta charset=\"UTF-8\">\n\t    <meta http-equiv=\"Content-Type\" content=\"text/html;charset=UTF-8\">\n\t    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1,maximun-scale=1,user-scalable=no\" >\n\t   \n\t    <!--设置IE浏览器有限使用edge渲染 -->\n\t    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\">\n\t    <meta name=\"HandheldFriendly\" content=\"true\">\n\t    <title>Document</title>\n\n\t    <!-- link优化 -->\n\t    <link rel=\"shortcut icon\" href=\"/static/favicon.ico\">\n\t    <link rel=\"icon\" href=\"/static/favicon.ico\">\n\t    <link href=\"/static/dist/common.css\" rel = 'stylesheet'/>\n\t\t\t<link href=\"/static/dist/module.css\" rel = 'stylesheet'/>\n\n\t    <!-- 国内双核浏览器，特别是360，使用渲染引擎从左到右 -->\n\t    <meta name=\"renderer\" content=\"webkit|ie-comp|ie-stand\">\n\t    <!-- seo优化 -->\n\t    <meta name=\"author\" content=\"\">\n\t    <meta name=\"keywords\" content=\"\">\n\t\t\n\t    <!-- html shim -->\n\t    <!--[if lt IE 9]>\n\t      <script src=\"http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js\"></script>\n\t    <![endif]-->\n\t    <script src=\"http://cdn.bootcss.com/es5-shim/4.5.8/es5-shim.min.js\"></script>\n\t    <script src=\"/static/scripts/browserMqtt.js\"></script>\n\t</head>\n\t<body>\n\t    <div id=\"react-app\">" + appHtml + "</div>\n\t    <script>\n\t\t\t\twindow.__INITIAL_STATE__ = " + JSON.stringify(initialState) + "\n\t    </script>\n\t    <script src='/static/dist/bundle.js'></script>\n\t</body>\n\t</html>\n";
 	};
 
 /***/ },
-/* 68 */
+/* 70 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2374,6 +2477,18 @@ require("source-map-support").install();
 		}); // 备注二：要求该actionCreator返回promise类型
 		return Promise.all(promises);
 	};
+
+/***/ },
+/* 71 */
+/***/ function(module, exports) {
+
+	module.exports = require("http");
+
+/***/ },
+/* 72 */
+/***/ function(module, exports) {
+
+	module.exports = require("socket.io");
 
 /***/ }
 /******/ ]);

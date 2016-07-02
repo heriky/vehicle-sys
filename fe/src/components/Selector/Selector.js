@@ -23,18 +23,18 @@ class Selector extends React.Component {
 			dispatch(selectorsAPI()) ;
 		}
 
-    render() {
-			const {ids,names} = this.props ;
-      return <ul className={styles["root"]}>
-				{ids.map((id,index)=>
-					<li className={styles["list-item"]} key={index}>
-						<Link  to={`/monitor/${id}`} className={styles["item-name"]}
-						>{names[index]}</Link>
-						<span className={styles["item-status"]}>运行状态良好</span>
-					</li>
-				)}
-			</ul>
-    }
+  render() {
+		const {ids,names} = this.props ;
+    return <ul className={styles["root"]}>
+			{ids.map((id,index)=>
+				<li className={styles["list-item"]} key={index}>
+					<Link  to={`/monitor/${id}`} className={styles["item-name"]}
+					>{names[index]}</Link>
+					<span className={styles["item-status"]}>运行状态良好</span>
+				</li>
+			)}
+		</ul>
+  }
 }
 
 export default connect((state)=>{

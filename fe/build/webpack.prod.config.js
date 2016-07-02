@@ -31,7 +31,8 @@ module.exports = {
 	resovle:{
 		extensions:['','.js','.jsx'] //必须先写''否则会找index.js.js和index.js.jsx
 	},
-	
+	externals: {'mqtt':'mqtt'}
+	,
 	postcss: function () {
 	    return [require('autoprefixer'), require('precss')]; 
 	}

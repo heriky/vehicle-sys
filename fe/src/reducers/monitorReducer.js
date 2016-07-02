@@ -3,7 +3,9 @@ import {
 	REQUEST_MONITOR,
 	RECIEVE_MONITOR,
 	NETWORK_ERROR,
+	RECIEVE_UPDATE_DATA
 	} from '../actions/Constants' ;
+
 // isFetching:false,
 // info:{
 // 	location:["",""],
@@ -51,13 +53,20 @@ export default (state=initialState,action)=>{
 			const rs = fromJS(state).merge(action.json).merge({
 				isFetching:false
 			})
-			.merge(action.json)
 			.toJS()
 			return rs;
 		case NETWORK_ERROR:
 			return {
 				error:'Network error occrued ,see the detail:'+ action.error.toString()
 			}
+		case RECIEVE_UPDATE_DATA:
+		//sensorId,
+							//status,
+							//statusMsg
+			const { sensorId, status, statusMsg } = action.data;  // 找出前一个，更新！
+			return fromJS(state).mergeDeep({
+				
+			}).toJS();
 		default:
 			return state;
 	}
