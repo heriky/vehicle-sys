@@ -16,7 +16,7 @@ const MqttServer = new mosca.Server({
 	backend:pubsubsettings,
 	port: 1883,
 	http:{
-		port:8080,
+		port:8081,
 		bundle:true,
 		static: './'
 	}

@@ -12,6 +12,6 @@ export default (initialState)=>{
 		applyMiddleware(
 			callAPIMiddleware,
 			thunkMiddleware,
-			loggerMiddleware
+			typeof window != 'undefined' ? loggerMiddleware :({dispatch})=>next=>action=>{return next(action)} 
 	))
 }

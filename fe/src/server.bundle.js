@@ -75,15 +75,15 @@ require("source-map-support").install();
 
 	var _routes2 = _interopRequireDefault(_routes);
 
-	var _configureStore = __webpack_require__(60);
+	var _configureStore = __webpack_require__(63);
 
 	var _configureStore2 = _interopRequireDefault(_configureStore);
 
-	var _renderPage = __webpack_require__(69);
+	var _renderPage = __webpack_require__(72);
 
 	var _renderPage2 = _interopRequireDefault(_renderPage);
 
-	var _fetchDependentData = __webpack_require__(70);
+	var _fetchDependentData = __webpack_require__(73);
 
 	var _fetchDependentData2 = _interopRequireDefault(_fetchDependentData);
 
@@ -91,11 +91,11 @@ require("source-map-support").install();
 
 	//var mqttClient = require("./lib/mqttClient") ;
 	// 用这个消除index.js.map 的恶心bug
-	var mqtt = __webpack_require__(56);
+	var mqtt = __webpack_require__(59);
 
 	var app = (0, _express2.default)();
-	var server = __webpack_require__(71).Server(app);
-	var io = __webpack_require__(72)(server);
+	var server = __webpack_require__(74).Server(app);
+	var io = __webpack_require__(75)(server);
 
 	var resourceDir = _path2.default.join(__dirname, '../../resources');
 	app.use(_express2.default.static(resourceDir, { maxAge: '365d' }));
@@ -105,24 +105,11 @@ require("source-map-support").install();
 		target: 'http://localhost:3000/api'
 	});
 
-	var subscribeList = []; // 订阅列表，记录当前已经开启订阅的id（客户端）
 	app.use('/api', function (req, res) {
-
-		// 处理消息订阅
-		var matched = null;
-		if ((matched = req.originalUrl.match(/\/api\/v1\/vehicle\/(\w{24})/)) != null) {
-			var id = matched[1];
-			console.log('是时候该开启消息订阅了,订阅的id为:' + id);
-			if (!(id in subscribeList)) {
-				subscribeList.push(id);
-
-				//require('./lib/mqttClient2.js').subscribe(io) ;
-			}
-		}
-
 		// 处理代理转发
 		proxy.web(req, res);
 	});
+
 	proxy.on('error', function (error, req, res) {
 		//proxy错误处理s
 		var json = void 0;
@@ -508,7 +495,7 @@ require("source-map-support").install();
 
 	var _Monitor2 = _interopRequireDefault(_Monitor);
 
-	var _Selector = __webpack_require__(57);
+	var _Selector = __webpack_require__(60);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
@@ -1055,11 +1042,11 @@ require("source-map-support").install();
 
 	var _DataParkingState2 = _interopRequireDefault(_DataParkingState);
 
-	var _Tips = __webpack_require__(49);
+	var _Tips = __webpack_require__(52);
 
 	var _Tips2 = _interopRequireDefault(_Tips);
 
-	var _Monitor = __webpack_require__(51);
+	var _Monitor = __webpack_require__(54);
 
 	var _Monitor2 = _interopRequireDefault(_Monitor);
 
@@ -1067,9 +1054,9 @@ require("source-map-support").install();
 
 	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
 
-	var _postActions = __webpack_require__(52);
+	var _postActions = __webpack_require__(55);
 
-	var _updateAction = __webpack_require__(55);
+	var _updateAction = __webpack_require__(57);
 
 	var _reactRouter = __webpack_require__(5);
 
@@ -1107,8 +1094,7 @@ require("source-map-support").install();
 	      var info = this.props.info;
 
 	      if (info.id.length == 24 || this.props.params.id && this.props.params.id.length == 24) {
-	        var mqtt;
-	        var client;
+	        var mqttClient;
 
 	        (function () {
 	          var id = info.id || _this2.props.params.id;
@@ -1119,37 +1105,20 @@ require("source-map-support").install();
 	          });
 
 	          if (typeof window !== 'undefined') {
-	            // var mqttClient = require('../../lib/mqttClient') ;
-	            // mqttClient.subscribe(id) ;
+	            mqttClient = __webpack_require__(58);
 
-	            mqtt = __webpack_require__(56);
-	            client = mqtt.connect('ws://localhost:8080');
-
-
-	            client.on('connect', function () {
-	              client.subscribe('presence');
-	              client.publish('presence', 'Hello mqtt');
+	            mqttClient.subscribe(id);
+	            mqttClient.onReceivedMsg(function (data) {
+	              // sensorId,
+	              // status,
+	              // statusMsg
+	              dispatch((0, _updateAction.receiveUpdateData)(data));
 	            });
-
-	            client.on('message', function (topic, message) {
-	              // message is Buffer
-	              console.log(message.toString());
-	              client.end();
-	            });
-
-	            // var ioClient = require('socket.io-client') ;
-	            // var socket = ioClient.connect('http://localhost:3001');
-	            //   socket.on(`sensor_changed${id}`, function (data) {
-	            //     console.log('客户端收到的内容为:',data); // data为json字符串的形式
-
-	            //     dispatch(receiveUpdateData(JSON.parse(data))) ;
-	            //   });
-	            // 
 	          }
 	        })();
 	      } else {
-	          _reactRouter.browserHistory.push('/monitor');
-	        }
+	        _reactRouter.browserHistory.push('/monitor');
+	      }
 	    }
 	  }, {
 	    key: 'render',
@@ -1159,7 +1128,7 @@ require("source-map-support").install();
 	        'section',
 	        { className: _Monitor2.default.main },
 	        _react2.default.createElement(_DataStatePreview2.default, null),
-	        _react2.default.createElement(_DataParkingState2.default, null),
+	        _react2.default.createElement(_DataParkingState2.default, { vehicleId: this.props.params.id }),
 	        _react2.default.createElement(_Tips2.default, null)
 	      );
 	    }
@@ -1590,15 +1559,12 @@ require("source-map-support").install();
 		var parking = _state$monitor$distri.parking;
 
 		return {
-			total: total, parking: parking, isFetching: isFetching
+			total: total, parking: parking, isFetching: isFetching,
+			vehicleId: ownProps.vehicleId
 		};
 	}
 
-	function mapDistpatchToProps(state, ownProps) {
-		return {};
-	}
-
-	exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDistpatchToProps)(_ParkingState2.default);
+	exports.default = (0, _reactRedux.connect)(mapStateToProps)(_ParkingState2.default); // 注入dispatch
 
 /***/ },
 /* 45 */
@@ -1609,6 +1575,8 @@ require("source-map-support").install();
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 	var _react = __webpack_require__(4);
 
@@ -1641,6 +1609,8 @@ require("source-map-support").install();
 		var total = _ref.total;
 		var parking = _ref.parking;
 		var isFetching = _ref.isFetching;
+		var dispatch = _ref.dispatch;
+		var vehicleId = _ref.vehicleId;
 		return _react2.default.createElement(
 			_Tab2.default,
 			{ title: '停车分布' },
@@ -1657,7 +1627,7 @@ require("source-map-support").install();
 					return _react2.default.createElement(
 						'div',
 						{ className: _ParkingState2.default.wrapper, key: index },
-						_react2.default.createElement(_ParkingItem2.default, parking[index])
+						_react2.default.createElement(_ParkingItem2.default, _extends({}, parking[index], { dispatch: dispatch, vehicleId: vehicleId }))
 					);
 				})
 			)
@@ -1699,14 +1669,24 @@ require("source-map-support").install();
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
+	var _userActions = __webpack_require__(49);
+
+	var _ProgressBar = __webpack_require__(31);
+
+	var _ProgressBar2 = _interopRequireDefault(_ProgressBar);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// 合并样式
 
+
 	var ParkingItem = function ParkingItem(_ref) {
+		var dispatch = _ref.dispatch;
+		var vehicleId = _ref.vehicleId;
 		var id = _ref.id;
 		var pos = _ref.pos;
 		var currentStatus = _ref.currentStatus;
+		var sensorFetching = _ref.sensorFetching;
 
 		var statusStyle = void 0;
 		switch (currentStatus) {
@@ -1723,25 +1703,52 @@ require("source-map-support").install();
 				break;
 		}
 		var finalStyle = (0, _classnames2.default)(_ParkingItem2.default.root, statusStyle);
-
 		return _react2.default.createElement(
 			'div',
-			{ className: finalStyle },
+			{ className: _ParkingItem2.default.extra, onClick: function onClick(e) {
+					if (currentStatus === 'ordered') {
+						alert('无效的操作，该车位已被预订!');
+						e.stopPropagation();
+						return;
+					}
+					dispatch((0, _userActions.userOrder)({ id: vehicleId, sensorId: id, statusMsg: currentStatus }));
+				} },
 			_react2.default.createElement(
-				'span',
-				null,
-				'序号:',
-				id
+				'div',
+				{ className: finalStyle },
+				_react2.default.createElement(
+					'div',
+					{ style: { display: 'inline-block', width: '100%', verticalAlign: 'middle' } },
+					_react2.default.createElement(
+						'span',
+						null,
+						'序号:',
+						id
+					),
+					_react2.default.createElement(
+						'span',
+						null,
+						'位置:',
+						pos[0] + '/' + pos[1]
+					)
+				),
+				_react2.default.createElement('i', { style: { display: 'inline-block', height: '100%', verticalAlign: 'middle' } })
 			),
-			_react2.default.createElement('br', null),
 			_react2.default.createElement(
-				'span',
-				null,
-				'位置:',
-				pos
+				'div',
+				{ className: _ParkingItem2.default.backface },
+				sensorFetching !== undefined && sensorFetching === true ? _react2.default.createElement(_ProgressBar2.default, null) : _react2.default.createElement(
+					'span',
+					null,
+					'点击预订车位'
+				)
 			)
 		);
 	};
+
+	/*
+	{isOk !==undefined ? (isOk === true ? <span>预订成功</span> : <span>预订失败</span>): '' }
+	 */
 
 	exports.default = ParkingItem;
 
@@ -1750,7 +1757,9 @@ require("source-map-support").install();
 /***/ function(module, exports) {
 
 	module.exports = {
+		"extra": "ParkingItem__extra-PYmRF",
 		"root": "ParkingItem__root-3V4Ag",
+		"backface": "ParkingItem__backface-3KKfs",
 		"idle": "ParkingItem__idle-1ivjh",
 		"busy": "ParkingItem__busy-VSf4x",
 		"ordered": "ParkingItem__ordered-TT6_o"
@@ -1765,12 +1774,98 @@ require("source-map-support").install();
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+	exports.userOrder = userOrder;
+
+	var _Constants = __webpack_require__(50);
+
+	var qs = __webpack_require__(51);
+
+	var BASE_URL = typeof window === 'undefined' ? "http://localhost:3000" : "http://localhost:3001";
+
+	function patch_ordered(sensorId) {
+		return {
+			type: _Constants.ORDERED_PATCH,
+			sensorId: sensorId
+		};
+	}
+
+	function received_oredered(sensorId) {
+		return {
+			type: _Constants.ORDERED_RECEIVE,
+			sensorId: sensorId
+		};
+	}
+
+	function userOrder(data) {
+		// params: 停车场id， data:{id,sensorId,status}提交sensorid和当前状态字符串
+		debugger;
+		var requestUrl = BASE_URL + "/api/v1/vehicle/" + data.id + '&' + data.sensorId;
+		return {
+			types: [_Constants.ORDERED_PATCH, _Constants.ORDERED_RECEIVE, _Constants.NETWORK_ERROR],
+			payload: { sensorId: data.sensorId, requestUrl: requestUrl },
+			shouldCallAPI: function shouldCallAPI(state) {
+				return true;
+			},
+			API: function API() {
+				return fetch(requestUrl, { method: 'PATCH', body: qs.stringify(data) });
+			} // 分离的好，把fetch分离出来，易于配置。
+
+			// 问题记录： fetch这个api有点问题，无法提交额外的数据，针对post和patch都无法提交
+		};
+	}
+
+/***/ },
+/* 50 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	// 处理首屏数据拉去的网络操作
+	var REQUEST_MONITOR = exports.REQUEST_MONITOR = "REQUEST_MONITOR"; // 发送请求开始时触发的事件
+	var RECIEVE_MONITOR = exports.RECIEVE_MONITOR = "RECIEVE_MONITOR"; // 发送请求结束后
+	var NETWORK_ERROR = exports.NETWORK_ERROR = "NETWORK_ERROR"; //promise请求网络异常
+
+	// 通用网络异常
+	var INVALIDATE_PREVIEW = exports.INVALIDATE_PREVIEW = "INVALIDATE_PREVIEW"; // 改变当前状态
+
+	// 获取所有停车场的数据
+	var REQUEST_ALL_VEHICLES = exports.REQUEST_ALL_VEHICLES = "request_all_vehicles_info";
+	var RECIEVE_ALL_VEHICLES = exports.RECIEVE_ALL_VEHICLES = 'receive_all_vehicles_info';
+
+	// 接受服务器推送，进行更新。
+
+	var RECIEVE_UPDATE_DATA = exports.RECIEVE_UPDATE_DATA = 'receive_update_data';
+
+	// 用户操作
+
+	var ORDERED_PATCH = exports.ORDERED_PATCH = 'ordered_patch'; // 开始发送反向请求
+	var ORDERED_RECEIVE = exports.ORDERED_RECEIVE = 'ordered_receive'; // 接收响应数据
+
+/***/ },
+/* 51 */
+/***/ function(module, exports) {
+
+	module.exports = require("querystring");
+
+/***/ },
+/* 52 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
 
 	var _react = __webpack_require__(4);
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Tips = __webpack_require__(50);
+	var _Tips = __webpack_require__(53);
 
 	var _Tips2 = _interopRequireDefault(_Tips);
 
@@ -1810,7 +1905,7 @@ require("source-map-support").install();
 	exports.default = Tips;
 
 /***/ },
-/* 50 */
+/* 53 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1819,7 +1914,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 51 */
+/* 54 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1827,7 +1922,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 52 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1838,11 +1933,11 @@ require("source-map-support").install();
 	exports.infoAPI = infoAPI;
 	exports.selectorsAPI = selectorsAPI;
 
-	var _isomorphicFetch = __webpack_require__(53);
+	var _isomorphicFetch = __webpack_require__(56);
 
 	var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
 
-	var _Constants = __webpack_require__(54);
+	var _Constants = __webpack_require__(50);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1915,43 +2010,13 @@ require("source-map-support").install();
 	}
 
 /***/ },
-/* 53 */
+/* 56 */
 /***/ function(module, exports) {
 
 	module.exports = require("isomorphic-fetch");
 
 /***/ },
-/* 54 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	// 处理首屏数据拉去的网络操作
-	var REQUEST_MONITOR = exports.REQUEST_MONITOR = "REQUEST_MONITOR"; // 发送请求开始时触发的事件
-	var RECIEVE_MONITOR = exports.RECIEVE_MONITOR = "RECIEVE_MONITOR"; // 发送请求结束后
-	var NETWORK_ERROR = exports.NETWORK_ERROR = "NETWORK_ERROR"; //promise请求网络异常
-
-	// 处理首屏detail数据拉取
-	var REQUEST_DETAIL = exports.REQUEST_DETAIL = 'REQUEST_DETAIL';
-	var RECIEVE_DETAIL = exports.RECIEVE_DETAIL = 'RECIEVE_DETAIL';
-
-	// 网络异常
-	var INVALIDATE_PREVIEW = exports.INVALIDATE_PREVIEW = "INVALIDATE_PREVIEW"; // 改变当前状态
-
-	// 获取全部停车场的数据
-	var REQUEST_ALL_VEHICLES = exports.REQUEST_ALL_VEHICLES = "request_all_vehicles_info";
-	var RECIEVE_ALL_VEHICLES = exports.RECIEVE_ALL_VEHICLES = 'receive_all_vehicles_info';
-
-	// 接受服务器推送，进行更新。
-
-	var RECIEVE_UPDATE_DATA = exports.RECIEVE_UPDATE_DATA = 'receive_update_data';
-
-/***/ },
-/* 55 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1961,7 +2026,7 @@ require("source-map-support").install();
 	});
 	exports.receiveUpdateData = undefined;
 
-	var _Constants = __webpack_require__(54);
+	var _Constants = __webpack_require__(50);
 
 	var receiveUpdateData = exports.receiveUpdateData = function receiveUpdateData(data) {
 		return {
@@ -1971,13 +2036,56 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 56 */
+/* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var mqtt = __webpack_require__(59);
+	var client = mqtt.connect('ws://localhost:8081');
+
+	//
+
+	exports.subscribe = function (id) {
+		// 订阅传主题为:'传感器变化'的消息。
+		client.on('connect', function () {
+			console.log('连接mqtt代理成功！当前客户端id为:', client.id);
+
+			client.subscribe('sensor_changed' + id, { qos: 0 }, function () {
+				console.log('订阅消息成功，当前订阅的主题消息为:sensor_changed' + id);
+			});
+		});
+
+		client.on('close', function () {
+			console.log('mqtt连接关闭!');
+		});
+		client.on('reconnect', function () {
+			console.log('mqtt重新连接');
+		});
+		client.on('error', function (e) {
+			console.log('mqtt客户端发生错误:', e);
+		});
+	};
+
+	exports.onReceivedMsg = function (cb) {
+		client.on('message', function (topic, message, packet) {
+			console.log('接收到消息。消息主题为:' + topic + ',消息主题为:' + message);
+			cb(JSON.parse(message));
+		});
+	};
+
+	exports.publish = function (topic, payload) {
+		//client.publish('presence','Hello mqtt') ;
+	};
+
+/***/ },
+/* 59 */
 /***/ function(module, exports) {
 
 	module.exports = require("mqtt");
 
 /***/ },
-/* 57 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1992,7 +2100,7 @@ require("source-map-support").install();
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _Selector = __webpack_require__(58);
+	var _Selector = __webpack_require__(61);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
@@ -2000,7 +2108,7 @@ require("source-map-support").install();
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
-	var _connectSelector = __webpack_require__(59);
+	var _connectSelector = __webpack_require__(62);
 
 	var _connectSelector2 = _interopRequireDefault(_connectSelector);
 
@@ -2008,7 +2116,7 @@ require("source-map-support").install();
 
 	var _reactRouter = __webpack_require__(5);
 
-	var _postActions = __webpack_require__(52);
+	var _postActions = __webpack_require__(55);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -2081,7 +2189,7 @@ require("source-map-support").install();
 	})(Selector);
 
 /***/ },
-/* 58 */
+/* 61 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -2092,7 +2200,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 59 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2101,11 +2209,11 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _Selector = __webpack_require__(57);
+	var _Selector = __webpack_require__(60);
 
 	var _Selector2 = _interopRequireDefault(_Selector);
 
-	var _postActions = __webpack_require__(52);
+	var _postActions = __webpack_require__(55);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -2150,7 +2258,7 @@ require("source-map-support").install();
 	exports.default = connectSelector;
 
 /***/ },
-/* 60 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2159,19 +2267,19 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _redux = __webpack_require__(61);
+	var _redux = __webpack_require__(64);
 
-	var _reduxThunk = __webpack_require__(62);
+	var _reduxThunk = __webpack_require__(65);
 
 	var _reduxThunk2 = _interopRequireDefault(_reduxThunk);
 
-	var _reduxLogger = __webpack_require__(63);
+	var _reduxLogger = __webpack_require__(66);
 
 	var _reduxLogger2 = _interopRequireDefault(_reduxLogger);
 
-	var _APIMiddleware = __webpack_require__(64);
+	var _APIMiddleware = __webpack_require__(67);
 
-	var _reducers = __webpack_require__(65);
+	var _reducers = __webpack_require__(68);
 
 	var _reducers2 = _interopRequireDefault(_reducers);
 
@@ -2180,29 +2288,36 @@ require("source-map-support").install();
 	var loggerMiddleware = (0, _reduxLogger2.default)();
 
 	exports.default = function (initialState) {
-		return (0, _redux.createStore)(_reducers2.default, initialState, (0, _redux.applyMiddleware)(_APIMiddleware.callAPIMiddleware, _reduxThunk2.default, loggerMiddleware));
+		return (0, _redux.createStore)(_reducers2.default, initialState, (0, _redux.applyMiddleware)(_APIMiddleware.callAPIMiddleware, _reduxThunk2.default, typeof window != 'undefined' ? loggerMiddleware : function (_ref) {
+			var dispatch = _ref.dispatch;
+			return function (next) {
+				return function (action) {
+					return next(action);
+				};
+			};
+		}));
 	};
 
 /***/ },
-/* 61 */
+/* 64 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux");
 
 /***/ },
-/* 62 */
+/* 65 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-thunk");
 
 /***/ },
-/* 63 */
+/* 66 */
 /***/ function(module, exports) {
 
 	module.exports = require("redux-logger");
 
 /***/ },
-/* 64 */
+/* 67 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2287,7 +2402,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 65 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2296,13 +2411,13 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _redux = __webpack_require__(61);
+	var _redux = __webpack_require__(64);
 
-	var _monitorReducer = __webpack_require__(66);
+	var _monitorReducer = __webpack_require__(69);
 
 	var _monitorReducer2 = _interopRequireDefault(_monitorReducer);
 
-	var _selectorsReducer = __webpack_require__(68);
+	var _selectorsReducer = __webpack_require__(71);
 
 	var _selectorsReducer2 = _interopRequireDefault(_selectorsReducer);
 
@@ -2315,7 +2430,7 @@ require("source-map-support").install();
 	// 这个文件至关重要，直接决定了整个应用的状态树顶层结构。
 
 /***/ },
-/* 66 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2324,9 +2439,9 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _immutable = __webpack_require__(67);
+	var _immutable = __webpack_require__(70);
 
-	var _Constants = __webpack_require__(54);
+	var _Constants = __webpack_require__(50);
 
 	// isFetching:false,
 	// info:{
@@ -2359,6 +2474,7 @@ require("source-map-support").install();
 			total: 0,
 			parking: []
 		}
+
 	};
 
 	exports.default = function () {
@@ -2376,10 +2492,9 @@ require("source-map-support").install();
 				// 	detail:{total,busy,ordered,idle},
 				// 	distribute
 				// } = action.json;
-				var rs = (0, _immutable.fromJS)(state).merge(action.json).merge({
+				return (0, _immutable.fromJS)(state).merge(action.json).merge({
 					isFetching: false
 				}).toJS();
-				return rs;
 			case _Constants.NETWORK_ERROR:
 				return {
 					error: 'Network error occrued ,see the detail:' + action.error.toString()
@@ -2388,25 +2503,75 @@ require("source-map-support").install();
 				//sensorId,
 				//status,
 				//statusMsg
-				var _action$data = action.data;
-				var sensorId = _action$data.sensorId;
-				var status = _action$data.status;
-				var statusMsg = _action$data.statusMsg; // 找出前一个，更新！
+				//prevStatusMsg 这个字段可以优化，不需要从服务器传递过来
+				//const { sensorId, statusMsg, prevStatusMsg } = action.data;  // 找出前一个，更新！			
+				return updateSensor(state, action.data); // 如果这里出错了就改回来
+			case _Constants.ORDERED_PATCH:
+				var rs1 = updateSensorExtra(state, action.sensorId, true, false);
+				debugger;
+				return rs1;
+			case _Constants.ORDERED_RECEIVE:
+				// 返回的数据格式
+				// {id,sensorId,isOk:true,prevStatusMsg}
+				var sensorId = action.json.sensorId;
 
-				return (0, _immutable.fromJS)(state).mergeDeep({}).toJS();
+				var updatedState = updateSensor(state, { sensorId: sensorId, statusMsg: 'ordered' });
+				var rs2 = updateSensorExtra(updatedState, sensorId, false);
+				debugger;
+				return rs2;
 			default:
 				return state;
 		}
 	};
 
+	// 根据单个传感器的sensorId，来更新当前传感器的状态。
+
+
+	function updateSensor(state, _ref) {
+		var sensorId = _ref.sensorId;
+		var statusMsg = _ref.statusMsg;
+		var prevStatusMsg = _ref.prevStatusMsg;
+
+		var cloned = (0, _immutable.fromJS)(state).toJS();
+
+		// 更新分布图中的状态
+		cloned.distribute.parking.forEach(function (item, index) {
+			if (item.id == sensorId) {
+				if (!prevStatusMsg) {
+					prevStatusMsg = item.currentStatus;
+				}
+				item.currentStatus = statusMsg;
+			}
+		});
+
+		// 更新预览图中的状态
+		var detail = cloned.detail;
+		detail[prevStatusMsg] -= 1;
+		detail[statusMsg] += 1;
+
+		return cloned;
+	}
+
+	function updateSensorExtra(state, sensorId, sensorFetching) {
+		return (0, _immutable.fromJS)(state).updateIn(['distribute', 'parking'], function (items) {
+			return items.map(function (item) {
+				debugger;
+				if (item.get('id') == sensorId) {
+					item.set('sensorFetching', sensorFetching);
+				}
+				return item;
+			});
+		}).toJS();
+	}
+
 /***/ },
-/* 67 */
+/* 70 */
 /***/ function(module, exports) {
 
 	module.exports = require("immutable");
 
 /***/ },
-/* 68 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2415,9 +2580,9 @@ require("source-map-support").install();
 		value: true
 	});
 
-	var _immutable = __webpack_require__(67);
+	var _immutable = __webpack_require__(70);
 
-	var _Constants = __webpack_require__(54);
+	var _Constants = __webpack_require__(50);
 
 	var initialState = { ids: [], names: [] };
 
@@ -2438,7 +2603,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 69 */
+/* 72 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2452,7 +2617,7 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 70 */
+/* 73 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2479,13 +2644,13 @@ require("source-map-support").install();
 	};
 
 /***/ },
-/* 71 */
+/* 74 */
 /***/ function(module, exports) {
 
 	module.exports = require("http");
 
 /***/ },
-/* 72 */
+/* 75 */
 /***/ function(module, exports) {
 
 	module.exports = require("socket.io");

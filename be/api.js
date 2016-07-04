@@ -81,7 +81,7 @@ app.use(function(err,req,res,next){
 
 // mqtt
 mqttServer.on('ready',()=>{
-	console.log('Mqtt Server is running on port 1883\n','Websocket run on port 8080') ;
+	console.log('Mqtt Server is running on port 1883\n','Websocket run on port 8081') ;
 })
 
 

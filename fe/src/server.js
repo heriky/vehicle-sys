@@ -31,24 +31,11 @@ const proxy = httpProxy.createProxyServer({
   target: 'http://localhost:3000/api',
 });
 
-var subscribeList = [] ; // 订阅列表，记录当前已经开启订阅的id（客户端）
 app.use('/api',(req,res)=>{
-
-	// 处理消息订阅
-	var matched = null ;
-	if ((matched = req.originalUrl.match(/\/api\/v1\/vehicle\/(\w{24})/)) != null) {
-		const id = matched[1] ;
-		console.log('是时候该开启消息订阅了,订阅的id为:'+ id) ;
-		if (!(id in subscribeList)) {
-			subscribeList.push(id) ;
-
-			//require('./lib/mqttClient2.js').subscribe(io) ;
-		}
-	}
-
 	// 处理代理转发
 	proxy.web(req,res) ;
 })
+
 proxy.on('error', (error, req, res) => {  //proxy错误处理s
   let json;
   if (error.code !== 'ECONNRESET') {

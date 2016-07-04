@@ -4,12 +4,10 @@ import ParkingState from '../components/ParkingState/ParkingState'
 function mapStateToProps(state,ownProps){
 	const {isFetching,distribute:{total,parking}} = state.monitor;
 	return {
-		total,parking,isFetching
+		total,parking,isFetching,
+		vehicleId:ownProps.vehicleId
 	}
 }
 
-function mapDistpatchToProps(state,ownProps){
-	return {} ;
-}
 
-export default connect(mapStateToProps,mapDistpatchToProps)(ParkingState)
+export default connect(mapStateToProps)(ParkingState) // 注入dispatch

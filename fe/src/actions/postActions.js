@@ -1,6 +1,5 @@
 import fetch from 'isomorphic-fetch' ;
 import {REQUEST_MONITOR,RECIEVE_MONITOR,NETWORK_ERROR} from './Constants' ;
-import {REQUEST_DETAIL,RECIEVE_DETAIL} from './Constants' ;
 import {REQUEST_ALL_VEHICLES, RECIEVE_ALL_VEHICLES } from './Constants' ;
 
 const  BASE_URL =  typeof window === 'undefined' ? "http://localhost:3000" : "http://localhost:3001"

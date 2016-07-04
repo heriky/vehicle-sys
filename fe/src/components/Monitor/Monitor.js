@@ -35,35 +35,14 @@ class Monitor extends React.Component {
         })  
 
         if (typeof window !== 'undefined') {
-          // var mqttClient = require('../../lib/mqttClient') ;
-          // mqttClient.subscribe(id) ;
-  
-          var mqtt    = require('mqtt');
-          var client  = mqtt.connect('ws://localhost:8080');
-
-          client.on('connect', function () {
-            client.subscribe('presence');
-            client.publish('presence', 'Hello mqtt');
-          });
-
-          client.on('message', function (topic, message) {
-            // message is Buffer
-            console.log(message.toString());
-            client.end();
-          });    
-      
-
-
-          // var ioClient = require('socket.io-client') ;
-          // var socket = ioClient.connect('http://localhost:3001');
-          //   socket.on(`sensor_changed${id}`, function (data) {
-          //     console.log('客户端收到的内容为:',data); // data为json字符串的形式
-
-          //     dispatch(receiveUpdateData(JSON.parse(data))) ;
-          //   });
-          //   
-        
-
+          var mqttClient = require('../../lib/mqttClient') ;
+          mqttClient.subscribe(id) ;
+          mqttClient.onReceivedMsg((data)=>{
+            // sensorId,
+            // status,
+            // statusMsg
+            dispatch(receiveUpdateData(data)) ;
+          })
         }
       }else{
         browserHistory.push('/monitor') ;
@@ -75,7 +54,7 @@ class Monitor extends React.Component {
       return(
         <section className={styles.main}>
               <DataStatePreview />
-              <DataParkingState/>
+              <DataParkingState vehicleId = {this.props.params.id}/>
               <Tips />
         </section>
       );

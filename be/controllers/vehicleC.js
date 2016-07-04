@@ -74,7 +74,7 @@ exports.save = function(req,res){
 }
 
 /**【上位机调用】
- * 更新相关传感器数据。依据停车场唯一_id和sensorId,可以准确查询到相关sensor的值，并更新
+ * 传感器数据发生了变化，更新相关传感器数据。依据停车场唯一_id和sensorId,可以准确查询到相关sensor的值，并更新
  * @param  {[type]} req [description]
  * @param  {[type]} res [description]
  * @return {[type]}     [description]
@@ -91,12 +91,16 @@ exports.updateSensor = function(req,res){
 	var status = distance > 2 ? 0 : 1;
 	var statusMsg = distance > 2 ? "idle" : "busy" ;
 
+	var prevStatusMsg ;
+
 	Vehicle.findById(id,function(err,vehicle){
 		if (vehicle) {
 			var sensors = vehicle.sensors ;
 
 			sensors.forEach(function(sensor,index){
 				if (sensor.sensorId === sensorId) {
+					prevStatusMsg = sensor.statusMsg ; //  这里便于客户端更新消息,找出原始的状态
+
 					Object.assign(sensor,{
 						distance: distance,
 						loc: 			loc,
@@ -119,15 +123,16 @@ exports.updateSensor = function(req,res){
 					// 更新成功后同时当前broker推送sensor_changed 主题的mqtt消息到各个订阅的客户端，以便使用。
 					var message = {
 						topic:mqttConst.sensorChanged+id, // 当前停车场的id标志
-						payload:{
+						payload:JSON.stringify({
 							sensorId,
 							status,
-							statusMsg
-						},		// 当前停车场的所有数据
+							statusMsg,
+							prevStatusMsg,
+						}),		// 当前停车场的所有数据
 						qos:0,
 						retain:false
-					}
-					mqttServer.publish(JSON.stringify(message),function(){
+					};
+					mqttServer.publish(message,function(){
 						console.log(`主题消息${mqttConst.sensorChanged+id}成功发送！`) ;
 					})
 
@@ -228,8 +233,16 @@ exports.fetch = (req,res)=>{
  * @return {null}          null
  */
 exports.order = (req,res)=>{
-	var id = req.params.id ;   // 停车场的唯一id
-	var patchData = req.body ; //  提交json:{ sesorId, status,statusMsg}
+	  // 停车场的唯一id
+	// var patchData = req.body ; //  提交json:{ sesorId, statusMsg} 提交sensorId和原始的状态
+	// var id = patchData.id;
+	// var sensorId = patchData.sensorId ;
+	// var prevStatusMsg = patchData.statusMsg ;
+	
+	var combinedId = req.params.id;
+	combinedId = combinedId.split('&') ;
+	var id = combinedId[0] ;
+	var sensorId = parseInt(combinedId[1]) ;
 
 	Vehicle.findById(id,function(err,vehicle){
 		if (err) {
@@ -242,17 +255,11 @@ exports.order = (req,res)=>{
 			throw Error("无效的停车场id")} ;
 		
 		const sensors = vehicle.sensors ;
-		const sensorId = patchData.sensorId;
-		const status = patchData.status ;
-		const statusMsg = patchData.statusMsg ;
-		
+
 		sensors.forEach(function(sensor,index){
-			if (sensor.sensorId === sensorId) {
-				Object.assign(sensor,{
-					status: 	status,
-					statusMsg:statusMsg
-				});
-				return ; // 找到后终止
+			if (sensor.sensorId === sensorId) {  // 找到相应的id值，将其变成"预订状态",状态值为2
+				sensor.status = 2 ;
+				sensor.statusMsg = 'ordered' ;
 			}
 		}) ; 
 		
@@ -267,14 +274,20 @@ exports.order = (req,res)=>{
 			console.log('用户预定车位操作成功！发送mqtt消息！') ;
 
 			mqttServer.publish({
-				topic: `${USER_OPERATE}&${id}`, 
-				payload: {
+				topic: USER_OPERATE+id, 
+				payload: JSON.stringify({
+					id:id,
 					sensorId:sensorId,
-					status: status,
-					statusMsg:statusMsg,
-				}
+					currentStatusMsg:'ordered'
+				})
 			});
-
+			
+			console.log('当前sensorId为:'+sensorId)
+			return res.status(201).json({
+				isOK:true,
+				id:id,
+				sensorId:sensorId
+			});
 		})
 
 	})

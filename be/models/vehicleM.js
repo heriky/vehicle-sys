@@ -12,8 +12,8 @@ var vehicleShcema = new Schema({
 		sensorId:Number,
 		distance:Number, // 传感器距离
 		loc:[Number], // 如果有ZigBee定位，这里存储具体的定位信息,
-		status:Number, // 0标识空闲，1标识占用
-		statusMsg:String
+		status:Number, // 0标识空闲，1标识占用,2表示预订
+		statusMsg:String  // idle, busy,orderd
 	}],
 	meta:{
 		createAt:{

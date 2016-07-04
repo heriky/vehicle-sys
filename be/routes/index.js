@@ -17,9 +17,8 @@ router.route('/api/v1/vehicles')
 		  .patch(vehiclesC.updateSensor)   // 上位机使用，传感器数据有更新
 		  .get(vehiclesC.fetchAll) ;       // 客户端调用，获取所有停车场id,name
 
-router.route('/api/v1/vehicle/:id') // 
-			.get(vehiclesC.fetch)        // 客户端使用，获取单个停车场信息
-			.patch(vehiclesC.order);       // 客户端使用，提交客户端操作(占用车位) id为停车场id
-
+router.route('/api/v1/vehicle/:id') // 客户端使用，获取单个停车场信息
+			.get(vehiclesC.fetch)
+			.patch(vehiclesC.order) ;  // 客户端使用，提交客户端操作(用户占用车位) 
 
 module.exports = router;
