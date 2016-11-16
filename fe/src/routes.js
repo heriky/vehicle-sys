@@ -9,6 +9,6 @@ export default (
 	<Route path='/' component = {App}>
 		<IndexRoute component={Home}/>
 		<Route path = 'monitor/:id' component = {Monitor} />
-		<Route path = 'monitor' component = {Selector}  /> 
+		<Route path = 'monitor' component = {Selector}  />
 	</Route>
 )

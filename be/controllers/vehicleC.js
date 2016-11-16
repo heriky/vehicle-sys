@@ -3,6 +3,7 @@ var TriggerDistance = 2 ; // 触发停车事件的距离
 
 const mqttConst = require('../plugins/mqtt-constants') ;
 const USER_OPERATE = mqttConst.userOperate ;
+const SENSOR_CHANGED = mqttConst.sensorChanged ;
 var mqttServer = require('../plugins/mqttPlugin').mqttServer ;
 
 
@@ -241,8 +242,8 @@ exports.order = (req,res)=>{
 	
 	var combinedId = req.params.id;
 	combinedId = combinedId.split('&') ;
-	var id = combinedId[0] ;
-	var sensorId = parseInt(combinedId[1]) ;
+	var id = combinedId[0] ;									// id 表示上位机的id值
+	var sensorId = parseInt(combinedId[1]) ;  // sensorId是传感器的id值
 
 	Vehicle.findById(id,function(err,vehicle){
 		if (err) {
@@ -283,13 +284,38 @@ exports.order = (req,res)=>{
 			});
 			
 			console.log('当前sensorId为:'+sensorId)
+			
+
+			// 以上操作保证了车位被占用时，数据库中相应的数据发生了变化，将"占用状态"持久化了。
+			// 当多个客户端被打开时，一个用户占用了车位，其他用户界面上的状态也应该自动发生变化，为了保证此变化
+			// 这里发送一个"伪sensor_changed消息"，因为不是真正发生了sensor_changed事件，而是为了利用sensor_changed事件能主动更新
+			// 界面的特性，所示是"伪sensor_changed消息"
+			
+			var message = {
+				topic:mqttConst.sensorChanged+id, // 当前停车场的id标志
+				payload:JSON.stringify({
+					sensorId,
+					status: 2,
+					statusMsg: 'ordered',
+					prevStatusMsg: 'idle',
+				}),		// 当前停车场的所有数据
+				qos:0,
+				retain:false
+			};
+			mqttServer.publish(message,function(){
+				console.log(`伪sensor_changed消息：${mqttConst.sensorChanged+id}成功发送！共享占用状态`) ;
+			});
+
+
+			// 最后返回状态码
+			
 			return res.status(201).json({
 				isOK:true,
 				id:id,
 				sensorId:sensorId
 			});
-		})
 
+		})
 	})
 }
 

@@ -27,6 +27,11 @@ const ParkingItem = ({dispatch,vehicleId,id,pos,currentStatus,sensorFetching})=>
 				e.stopPropagation() ;
 				return ;
 			}
+			if (currentStatus === 'busy') {
+				alert('车位是占用状态，别乱点了！');
+				e.stopPropagation() ;
+				return ;
+			}
 			dispatch(userOrder({id:vehicleId,sensorId:id,statusMsg:currentStatus}))}
 		}>
 			<div className={finalStyle}>

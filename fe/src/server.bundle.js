@@ -1711,6 +1711,11 @@ require("source-map-support").install();
 						e.stopPropagation();
 						return;
 					}
+					if (currentStatus === 'busy') {
+						alert('车位是占用状态，别乱点了！');
+						e.stopPropagation();
+						return;
+					}
 					dispatch((0, _userActions.userOrder)({ id: vehicleId, sensorId: id, statusMsg: currentStatus }));
 				} },
 			_react2.default.createElement(

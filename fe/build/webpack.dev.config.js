@@ -64,9 +64,9 @@ module.exports = {
 			//jquery:'../dist/jquery.min.js'
 		}
 	},
-	
+
 	postcss: function () {
-	    return [require('autoprefixer'), require('precss')]; 
+	    return [require('autoprefixer'), require('precss')];
 	}
 	  // postcss: [ autoprefixer({ browsers: ['last 2 versions'] }) ]
 	,
@@ -82,7 +82,7 @@ module.exports = {
 				exclude:path.resolve(RESOURCE_PATH,'styles/'), // 公共样式之外的，都是用css-modules进行管理
 				//以下这种方式会导致每一个css-module都会以style的方式插入，这样会导致很多style标签
 				//loaders:['style','css?modules&importLoaders=1&localIdentName=[name]__[local]-[hash:base64:5]','postcss','sass?sourceMap'],
-				
+
 				// 这里放的是需要css_modules局部处理的样式，importLoaders=1选项的使用是为了将css-module和postCss整合
 				// 需要明确的是API的使用
 				// ExtractTextPlugin.extract([notExtractLoader], loader, [options]) Creates an extracting loader from an existing loader.
@@ -91,11 +91,11 @@ module.exports = {
 				// 要么直接写成extract(['css','postcss','sass'])，要么写成extract('style',['css','postcss','sass'])
 				loader: moduleStyleExtract.extract('style',['css?modules&importLoaders=1&localIdentName=[name]__[local]-[hash:base64:5]','postcss','sass?sourceMap'])
 			},
-			{ 
+			{
 				// 大于50kb的文件都会被输出到output中path的目录中去，按照name中所指定的路径和格式
 				test: /\.(gif|jpg|png)\??.*$/, loader: 'url-loader?limit=50000&name=images/[name].[ext]'
 			},
-			{ 
+			{
 				test: /\.(woff|svg|eot|ttf)\??.*$/, loader: 'url-loader?limit=50000&name=fonts/[name].[ext]'
 			},
 			{

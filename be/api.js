@@ -23,7 +23,7 @@ app.use(bodyParser.json()) ;
 app.use(bodyParser.urlencoded({extended:true}));
 //app.use(multer({dest:'/tmp'}).array('uploadFile'));
 app.use(cookieParser) ;
-//var dbUrl = 'mongodb://hankang@HANkang3402510@127.0.0.1:27017/vehicle';
+//var dbUrl = 'mongodb://hankang:HANkang3402510@127.0.0.1:27017/vehicle';
 var dbUrl = 'mongodb://127.0.0.1/vehicle';
 mongoose.connect(dbUrl) // 首页开启数据库连接
 mongoose.Promise = global.Promise ; // mongoose在4.0之后需要插入外部的的Promise组件

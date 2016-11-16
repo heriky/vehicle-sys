@@ -10,7 +10,7 @@ export const callAPIMiddleware = ({dispatch,getState})=>next=>action=>{
 
 	//2. 过滤类型
 	if(!types) return next(action) //放行,必须return
-	
+
 	if(!Array.isArray(types) || types.length != 3 || types.some(it=>typeof it != "string")){
 		throw Error('Expected an array of three string types') ;
 	}
@@ -27,7 +27,6 @@ export const callAPIMiddleware = ({dispatch,getState})=>next=>action=>{
 	//3.开始异步调用，并生成同步action实例触发动作
 	const [requestType,successType,errorType] = types;
 
-	
 	// 发送api请求之前触发的动作
 	dispatch(Object.assign({},payload, {
 		type:requestType
@@ -48,7 +47,7 @@ export const callAPIMiddleware = ({dispatch,getState})=>next=>action=>{
 			}
 		},
 		error=>{
-			dispatch(Object.assign({},payload,{	
+			dispatch(Object.assign({},payload,{
 				type:errorType,
 				error
 			}))

@@ -1,4 +1,4 @@
-import {applyMiddleware,createStore} from 'redux' 
+import {applyMiddleware,createStore} from 'redux';
 import thunkMiddleware from 'redux-thunk'
 import createLogger from 'redux-logger'
 import {callAPIMiddleware} from '../middlewares/APIMiddleware' ;
@@ -12,6 +12,6 @@ export default (initialState)=>{
 		applyMiddleware(
 			callAPIMiddleware,
 			thunkMiddleware,
-			typeof window != 'undefined' ? loggerMiddleware :({dispatch})=>next=>action=>{return next(action)} 
+			typeof window != 'undefined' ? loggerMiddleware :({dispatch})=>next=>action=>{return next(action)}
 	))
 }
